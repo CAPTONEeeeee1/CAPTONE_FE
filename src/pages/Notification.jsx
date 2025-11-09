@@ -1,15 +1,70 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, CheckCheck, MessageSquare, UserPlus, Clock, Mail, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Bell, CheckCheck, MessageSquare, UserPlus, Clock, Mail, MessageCircle, Check, X, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function NotificationsPage() {
     const [filter, setFilter] = useState("all");
     const [channelFilter, setChannelFilter] = useState("all");
+    const [invitations, setInvitations] = useState([]);
+    const [isLoadingInvitations, setIsLoadingInvitations] = useState(true);
+    const [processingInvitationId, setProcessingInvitationId] = useState(null);
+
+    useEffect(() => {
+        fetchInvitations();
+    }, []);
+
+    const fetchInvitations = async () => {
+        try {
+            setIsLoadingInvitations(true);
+            const response = await workspaceService.getMyInvitations();
+            setInvitations(response.invitations || response || []);
+        } catch (error) {
+            console.error("Error fetching invitations:", error);
+            setInvitations([]);
+        } finally {
+            setIsLoadingInvitations(false);
+        }
+    };
+
+    const handleAcceptInvitation = async (invitationId) => {
+        try {
+            setProcessingInvitationId(invitationId);
+            await workspaceService.acceptInvitation(invitationId);
+            toast.success("Đã chấp nhận lời mời!");
+
+            // Remove invitation from list
+            setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        } catch (error) {
+            console.error("Error accepting invitation:", error);
+            toast.error(error.message || "Không thể chấp nhận lời mời");
+        } finally {
+            setProcessingInvitationId(null);
+        }
+    };
+
+    const handleRejectInvitation = async (invitationId) => {
+        try {
+            setProcessingInvitationId(invitationId);
+            await workspaceService.rejectInvitation(invitationId);
+            toast.success("Đã từ chối lời mời");
+
+            // Remove invitation from list
+            setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        } catch (error) {
+            console.error("Error rejecting invitation:", error);
+            toast.error(error.message || "Không thể từ chối lời mời");
+        } finally {
+            setProcessingInvitationId(null);
+        }
+    };
 
     const notifications = [
         {
@@ -119,7 +174,10 @@ export default function NotificationsPage() {
                                 <div>
                                     <h1 className="text-3xl font-bold text-balance">Thông báo</h1>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        {notifications.filter((n) => n.status === "unread").length} thông báo chưa đọc
+                                        {invitations.length > 0
+                                            ? `${invitations.length} lời mời đang chờ`
+                                            : `${notifications.filter((n) => n.status === "unread").length} thông báo chưa đọc`
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -128,6 +186,111 @@ export default function NotificationsPage() {
                                 Đánh dấu tất cả đã đọc
                             </Button>
                         </div>
+
+                        {/* Invitations Section */}
+                        {isLoadingInvitations ? (
+                            <Card className="border-l-4 border-l-blue-500 shadow-sm">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+                                            <Mail className="h-5 w-5 text-blue-600 animate-pulse" />
+                                        </div>
+                                        <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        {[1, 2].map((i) => (
+                                            <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : invitations.length > 0 ? (
+                            <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 shadow-sm">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+                                            <Mail className="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-bold">Lời mời tham gia Workspace</h2>
+                                            <p className="text-sm text-muted-foreground">
+                                                Bạn có {invitations.length} lời mời đang chờ xử lý
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {invitations.map((invitation) => (
+                                            <Card key={invitation.id} className="bg-background shadow-sm hover:shadow-md transition-shadow">
+                                                <CardContent className="p-5">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex-1 space-y-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                                                                    <FolderKanban className="h-5 w-5 text-primary" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="font-semibold text-lg">
+                                                                        {invitation.workspace?.name || 'Workspace'}
+                                                                    </h3>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Workspace
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="pl-[52px] space-y-2">
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                                                    <span className="text-muted-foreground">Được mời bởi:</span>
+                                                                    <span className="font-medium">
+                                                                        {invitation.invitedBy?.fullName || invitation.invitedBy?.email || 'Unknown'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <span className="text-muted-foreground">Vai trò:</span>
+                                                                    <Badge variant="secondary">
+                                                                        {invitation.role === 'admin' && 'Quản trị viên'}
+                                                                        {invitation.role === 'maintainer' && 'Bảo trì'}
+                                                                        {invitation.role === 'member' && 'Thành viên'}
+                                                                        {!['admin', 'maintainer', 'member'].includes(invitation.role) && invitation.role}
+                                                                    </Badge>
+                                                                </div>
+                                                                {invitation.createdAt && (
+                                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                        <Clock className="h-3 w-3" />
+                                                                        {new Date(invitation.createdAt).toLocaleString("vi-VN")}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 min-w-[140px]">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleAcceptInvitation(invitation.id)}
+                                                                disabled={processingInvitationId === invitation.id}
+                                                                className="gap-2 w-full"
+                                                            >
+                                                                <Check className="h-4 w-4" />
+                                                                {processingInvitationId === invitation.id ? "Đang xử lý..." : "Chấp nhận"}
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => handleRejectInvitation(invitation.id)}
+                                                                disabled={processingInvitationId === invitation.id}
+                                                                className="gap-2 w-full"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                                Từ chối
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : null}
 
                         {/* Filters */}
                         <Card className="shadow-sm">

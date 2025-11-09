@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     ArrowLeft,
     FolderKanban,
     Lock,
     Globe,
     Users,
+    Loader2,
 } from "lucide-react";
 
 const colorOptions = [
@@ -37,30 +39,39 @@ export default function CreateWorkspacePage() {
     const [description, setDescription] = useState("");
     const [isPrivate, setIsPrivate] = useState(true);
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
-    const [members, setMembers] = useState([]);
-    const [emailInput, setEmailInput] = useState("");
 
-    const handleAddMember = () => {
-        if (emailInput && emailInput.includes("@")) {
-            setMembers([...members, { email: emailInput, name: emailInput.split("@")[0] }]);
-            setEmailInput("");
-        }
-    };
-
-    const handleRemoveMember = (index) => {
-        setMembers(members.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!name.trim()) {
+            toast.error("Vui lòng nhập tên workspace");
+            return;
+        }
+
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const workspaceData = {
+                name: name.trim(),
+                description: description.trim(),
+            };
+
+            const response = await workspaceService.create(workspaceData);
+
+            toast.success("Tạo workspace thành công!");
+
+            // Navigate to the new workspace or workspaces list
+            setTimeout(() => {
+                navigate("/workspaces");
+            }, 500);
+        } catch (error) {
+            console.error("Error creating workspace:", error);
+
+            const errorMessage = error.message || "Có lỗi xảy ra khi tạo workspace";
+            toast.error(errorMessage);
+        } finally {
             setIsLoading(false);
-            // Redirect to workspaces page
-            navigate("/workspaces");
-        }, 1500);
+        }
     };
 
     return (
@@ -182,15 +193,23 @@ export default function CreateWorkspacePage() {
                                         type="button"
                                         variant="outline"
                                         onClick={() => navigate("/workspaces")}
+                                        disabled={isLoading}
                                     >
                                         Hủy
                                     </Button>
                                     <Button
                                         type="submit"
-                                        disabled={!name || isLoading}
+                                        disabled={!name.trim() || isLoading}
                                         className="min-w-32"
                                     >
-                                        {isLoading ? "Đang tạo..." : "Tạo Workspace"}
+                                        {isLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Đang tạo...
+                                            </>
+                                        ) : (
+                                            "Tạo Workspace"
+                                        )}
                                     </Button>
                                 </div>
                             </form>
@@ -243,7 +262,7 @@ export default function CreateWorkspacePage() {
                                         <CardContent className="space-y-3">
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Users className="h-4 w-4" />
-                                                <span>{members.length + 1} thành viên</span>
+                                                <span>1 thành viên</span>
                                             </div>
                                         </CardContent>
                                     </Card>

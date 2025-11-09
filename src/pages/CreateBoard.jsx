@@ -1,22 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import boardService from "@/services/boardService";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     ArrowLeft,
     Layout,
-    Palette,
     CheckCircle2,
     Columns3,
     Plus,
     GripVertical,
     X,
+    Lock,
+    Users,
+    Globe,
+    Hash,
 } from "lucide-react";
 
 const colorOptions = [
@@ -30,6 +36,27 @@ const colorOptions = [
     { name: "Teal", value: "bg-teal-500", hex: "#14B8A6" },
 ];
 
+const modeOptions = [
+    {
+        value: "private",
+        label: "Riêng tư",
+        description: "Thành viên cụ thể truy cập",
+        icon: Lock,
+    },
+    {
+        value: "workspace",
+        label: "Workspace",
+        description: "Tất cả thành viên truy cập",
+        icon: Users,
+    },
+    {
+        value: "public",
+        label: "Công khai",
+        description: "Bất kỳ ai có link đều có thể xem",
+        icon: Globe,
+    },
+];
+
 const defaultColumns = [
     { id: 1, name: "To Do", order: 0 },
     { id: 2, name: "In Progress", order: 1 },
@@ -40,13 +67,48 @@ export default function CreateBoardPage() {
     const navigate = useNavigate();
     const { id: workspaceId } = useParams();
     const [isLoading, setIsLoading] = useState(false);
+    const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
     // Form state
     const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
+    const [keySlug, setKeySlug] = useState("");
+    const [mode, setMode] = useState("private");
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
     const [columns, setColumns] = useState(defaultColumns);
     const [newColumnName, setNewColumnName] = useState("");
+
+    // Check if user has permission to create board
+    useEffect(() => {
+        const checkPermission = async () => {
+            try {
+                const response = await workspaceService.getMembers(workspaceId);
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const currentMember = response.members?.find(m => m.user.id === currentUser.id);
+
+                if (!currentMember) {
+                    toast.error("Bạn không phải thành viên của workspace này");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                if (!['owner', 'admin'].includes(currentMember.role)) {
+                    toast.error("Chỉ owner hoặc admin mới có thể tạo board");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                setIsCheckingPermission(false);
+            } catch (error) {
+                console.error("Error checking permission:", error);
+                toast.error("Không thể kiểm tra quyền truy cập");
+                navigate(`/workspaces/${workspaceId}`);
+            }
+        };
+
+        if (workspaceId) {
+            checkPermission();
+        }
+    }, [workspaceId, navigate]);
 
     const handleAddColumn = () => {
         if (newColumnName.trim()) {
@@ -64,17 +126,65 @@ export default function CreateBoardPage() {
         setColumns(columns.filter((col) => col.id !== id));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        if (!name.trim()) {
+            toast.error("Vui lòng nhập tên board");
+            return;
+        }
+
+        // Validate keySlug if provided
+        if (keySlug && !/^[A-Z0-9]{2,16}$/.test(keySlug)) {
+            toast.error("Key phải từ 2-16 ký tự chữ IN HOA hoặc số");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            const boardData = {
+                workspaceId,
+                name: name.trim(),
+                mode,
+            };
+
+            // Add keySlug if provided
+            if (keySlug.trim()) {
+                boardData.keySlug = keySlug.trim().toUpperCase();
+            }
+
+            const response = await boardService.create(boardData);
+
+            toast.success("Tạo board thành công!");
+            navigate(`/workspaces/${workspaceId}/boards/${response.board.id}`);
+        } catch (error) {
+            console.error("Error creating board:", error);
+            toast.error(error.message || "Không thể tạo board. Vui lòng thử lại.");
+        } finally {
             setIsLoading(false);
-            // Redirect to workspace page
-            navigate(`/workspaces/${workspaceId}`);
-        }, 1500);
+        }
     };
+
+    // Show loading state while checking permission
+    if (isCheckingPermission) {
+        return (
+            <div className="flex min-h-screen">
+                <DashboardSidebar />
+                <div className="flex-1 ml-64">
+                    <DashboardHeader />
+                    <main className="p-6">
+                        <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="text-center">
+                                <div className="h-8 w-8 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+                                <p className="text-muted-foreground">Đang kiểm tra quyền truy cập...</p>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">
@@ -130,21 +240,54 @@ export default function CreateBoardPage() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="description">Mô tả</Label>
-                                            <Textarea
-                                                id="description"
-                                                placeholder="Mô tả ngắn gọn về board này..."
-                                                rows={4}
-                                                value={description}
-                                                onChange={(e) => setDescription(e.target.value)}
-                                                className="border-2 resize-none"
+                                            <Label htmlFor="keySlug">
+                                                <div className="flex items-center gap-2">
+                                                    <Hash className="h-4 w-4" />
+                                                    Key Slug (Tùy chọn)
+                                                </div>
+                                            </Label>
+                                            <Input
+                                                id="keySlug"
+                                                placeholder="VD: PROJ, DEV, SPRINT..."
+                                                value={keySlug}
+                                                onChange={(e) => setKeySlug(e.target.value.toUpperCase())}
+                                                maxLength={16}
+                                                className="border-2 font-mono uppercase"
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                Prefix cho card keys (VD: PROJ-123, DEV-45). Từ 2-16 ký tự chữ IN HOA hoặc số.
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="mode">
+                                                Chế độ hiển thị <span className="text-destructive">*</span>
+                                            </Label>
+                                            <Select value={mode} onValueChange={setMode}>
+                                                <SelectTrigger id="mode" className="border-2">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {modeOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            <div className="flex items-start gap-3 py-1">
+                                                                <option.icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                                                                <div className="space-y-0.5">
+                                                                    <p className="font-medium">{option.label}</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {option.description}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </CardContent>
                                 </Card>
-
                                 {/* Color Theme */}
-                                <Card>
+                                {/* <Card>
                                     <CardHeader>
                                         <div className="flex items-center gap-2">
                                             <Palette className="h-5 w-5 text-primary" />
@@ -162,8 +305,8 @@ export default function CreateBoardPage() {
                                                     type="button"
                                                     onClick={() => setSelectedColor(color)}
                                                     className={`relative h-12 w-12 rounded-xl transition-all hover:scale-110 ${selectedColor.value === color.value
-                                                            ? "ring-4 ring-primary ring-offset-2 scale-110"
-                                                            : "ring-2 ring-border hover:ring-primary/50"
+                                                        ? "ring-4 ring-primary ring-offset-2 scale-110"
+                                                        : "ring-2 ring-border hover:ring-primary/50"
                                                         }`}
                                                     style={{ backgroundColor: color.hex }}
                                                 >
@@ -177,7 +320,7 @@ export default function CreateBoardPage() {
                                             Màu đã chọn: <span className="font-semibold">{selectedColor.name}</span>
                                         </p>
                                     </CardContent>
-                                </Card>
+                                </Card> */}
 
                                 {/* Columns Configuration */}
                                 <Card>
@@ -264,12 +407,13 @@ export default function CreateBoardPage() {
                                         type="button"
                                         variant="outline"
                                         onClick={() => navigate(`/workspaces/${workspaceId}`)}
+                                        disabled={isLoading}
                                     >
                                         Hủy
                                     </Button>
                                     <Button
                                         type="submit"
-                                        disabled={!name || columns.length === 0 || isLoading}
+                                        disabled={!name.trim() || isLoading}
                                         className="min-w-32"
                                     >
                                         {isLoading ? "Đang tạo..." : "Tạo Board"}
@@ -301,13 +445,28 @@ export default function CreateBoardPage() {
                                                     <h3 className="font-semibold truncate">
                                                         {name || "Tên board"}
                                                     </h3>
-                                                    <p className="text-xs text-muted-foreground truncate">
-                                                        {description || "Mô tả board"}
-                                                    </p>
+                                                    {keySlug && (
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <Hash className="h-3 w-3 text-muted-foreground" />
+                                                            <p className="text-xs text-muted-foreground font-mono">
+                                                                {keySlug.toUpperCase() || "KEY"}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </CardHeader>
-                                        <CardContent>
+                                        <CardContent className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                {modeOptions.find(m => m.value === mode)?.icon &&
+                                                    React.createElement(modeOptions.find(m => m.value === mode).icon, {
+                                                        className: "h-4 w-4 text-muted-foreground"
+                                                    })
+                                                }
+                                                <span className="text-muted-foreground">
+                                                    {modeOptions.find(m => m.value === mode)?.label}
+                                                </span>
+                                            </div>
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Columns3 className="h-4 w-4" />
                                                 <span>{columns.length} cột</span>

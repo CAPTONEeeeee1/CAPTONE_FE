@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { Users } from "lucide-react";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     FolderKanban,
-    Users,
     Lock,
     Globe,
     ArrowRight,
@@ -24,6 +26,42 @@ import {
 } from "lucide-react";
 
 export default function ReportsPage() {
+    const [workspaces, setWorkspaces] = useState([]);
+    const [isLoadingWorkspaces, setIsLoadingWorkspaces] = useState(true);
+
+    useEffect(() => {
+        fetchWorkspaces();
+    }, []);
+
+    const fetchWorkspaces = async () => {
+        try {
+            setIsLoadingWorkspaces(true);
+            const response = await workspaceService.getAll();
+            setWorkspaces(response.workspaces || []);
+        } catch (error) {
+            console.error("Error fetching workspaces:", error);
+            toast.error("Không thể tải danh sách workspace");
+            setWorkspaces([]);
+        } finally {
+            setIsLoadingWorkspaces(false);
+        }
+    };
+
+    const getWorkspaceColor = (id) => {
+        const colors = [
+            "bg-blue-500",
+            "bg-purple-500",
+            "bg-green-500",
+            "bg-orange-500",
+            "bg-pink-500",
+            "bg-red-500",
+            "bg-indigo-500",
+            "bg-teal-500",
+        ];
+        const index = id ? parseInt(id.slice(-1), 16) % colors.length : 0;
+        return colors[index];
+    };
+
     // Mock data - trong thực tế sẽ fetch từ API
     const recentActivities = [
         { id: 1, user: "Nguyễn Văn A", action: "hoàn thành task", item: "Thiết kế giao diện", workspace: "Dự án Website", time: "5 phút trước", type: "completed" },
@@ -49,53 +87,6 @@ export default function ReportsPage() {
         { day: "T6", completed: 20, created: 16 },
         { day: "T7", completed: 8, created: 10 },
         { day: "CN", completed: 5, created: 7 },
-    ];
-
-    const workspaces = [
-        {
-            id: 1,
-            name: "Dự án Website",
-            description: "Phát triển website cho khóa luận",
-            progress: 65,
-            members: 5,
-            tasks: 100,
-            completedTasks: 65,
-            isPrivate: true,
-            color: "bg-blue-500",
-        },
-        {
-            id: 2,
-            name: "Marketing Campaign",
-            description: "Chiến dịch quảng bá sản phẩm mới",
-            progress: 40,
-            members: 3,
-            tasks: 80,
-            completedTasks: 32,
-            isPrivate: false,
-            color: "bg-orange-500",
-        },
-        {
-            id: 3,
-            name: "Mobile App",
-            description: "Ứng dụng di động cho startup",
-            progress: 85,
-            members: 4,
-            tasks: 120,
-            completedTasks: 102,
-            isPrivate: true,
-            color: "bg-green-500",
-        },
-        {
-            id: 4,
-            name: "Research Project",
-            description: "Nghiên cứu khoa học về AI",
-            progress: 25,
-            members: 6,
-            tasks: 90,
-            completedTasks: 23,
-            isPrivate: true,
-            color: "bg-purple-500",
-        },
     ];
 
     return (
@@ -290,20 +281,53 @@ export default function ReportsPage() {
                     {/* Workspaces List */}
                     <div>
                         <h2 className="text-xl font-semibold mb-4">Danh sách dự án</h2>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {workspaces.map((workspace) => (
-                                <Card key={workspace.id} className="hover:shadow-lg transition-shadow">
-                                    <CardHeader>
-                                        <div className="flex items-start justify-between">
+                        {isLoadingWorkspaces ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {[1, 2, 3].map((i) => (
+                                    <Card key={i}>
+                                        <CardHeader>
                                             <div className="flex items-center gap-3">
-                                                <div className={`h-10 w-10 rounded-lg ${workspace.color} flex items-center justify-center`}>
+                                                <Skeleton className="h-10 w-10 rounded-lg" />
+                                                <div className="flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-full" />
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Skeleton className="h-10 w-full" />
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : workspaces.length === 0 ? (
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center py-12">
+                                    <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
+                                    <p className="text-muted-foreground text-center">
+                                        Chưa có workspace nào để hiển thị báo cáo
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {workspaces.map((workspace) => (
+                                    <Card key={workspace.id} className="hover:shadow-lg transition-shadow">
+                                        <CardHeader>
+                                            <div className="flex items-start gap-3">
+                                                <div
+                                                    className={`h-10 w-10 rounded-lg ${getWorkspaceColor(workspace.id)} flex items-center justify-center flex-shrink-0`}
+                                                >
                                                     <BarChart3 className="h-5 w-5 text-white" />
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <CardTitle className="text-lg">{workspace.name}</CardTitle>
-                                                        <Badge variant={workspace.isPrivate ? "secondary" : "outline"} className="text-xs flex items-center gap-1">
-                                                            {workspace.isPrivate ? (
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <CardTitle className="text-lg truncate">{workspace.name}</CardTitle>
+                                                        <Badge
+                                                            variant={workspace.visibility === "private" ? "secondary" : "outline"}
+                                                            className="text-xs flex items-center gap-1 flex-shrink-0"
+                                                        >
+                                                            {workspace.visibility === "private" ? (
                                                                 <>
                                                                     <Lock className="h-3 w-3" /> Private
                                                                 </>
@@ -314,45 +338,26 @@ export default function ReportsPage() {
                                                             )}
                                                         </Badge>
                                                     </div>
-                                                    <CardDescription className="text-sm">{workspace.description}</CardDescription>
+                                                    <CardDescription className="text-sm line-clamp-2">
+                                                        {workspace.description || "Không có mô tả"}
+                                                    </CardDescription>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardHeader>
+                                        </CardHeader>
 
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Tiến độ</span>
-                                                <span className="font-medium">{workspace.progress}%</span>
-                                            </div>
-                                            <Progress value={workspace.progress} />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                            <div className="flex flex-col">
-                                                <span className="text-muted-foreground">Công việc</span>
-                                                <span className="font-medium">
-                                                    {workspace.completedTasks}/{workspace.tasks}
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-muted-foreground">Thành viên</span>
-                                                <span className="font-medium">{workspace.members}</span>
-                                            </div>
-                                        </div>
-
-                                        <Button variant="outline" className="w-full" asChild>
-                                            <Link to={`/reports/${workspace.id}`} className="flex items-center justify-center gap-2">
-                                                <BarChart3 className="h-4 w-4" />
-                                                Xem báo cáo chi tiết
-                                                <ArrowRight className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                                        <CardContent>
+                                            <Button variant="outline" className="w-full" asChild>
+                                                <Link to={`/reports/${workspace.id}`}>
+                                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                                    Xem báo cáo chi tiết
+                                                    <ArrowRight className="h-4 w-4 ml-2" />
+                                                </Link>
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>

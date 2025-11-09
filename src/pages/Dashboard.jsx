@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import workspaceService from "@/services/workspaceService";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
@@ -11,7 +13,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
     CheckCircle2,
@@ -21,38 +23,46 @@ import {
     FolderKanban,
     Plus,
     ArrowRight,
+    Lock,
+    Globe,
 } from "lucide-react";
 
 export default function DashboardPage() {
-    const workspaces = [
-        {
-            id: 1,
-            name: "Dự án Website",
-            description: "Phát triển website cho khóa luận",
-            progress: 65,
-            members: 5,
-            tasks: { total: 24, completed: 16 },
-            color: "bg-blue-500",
-        },
-        {
-            id: 2,
-            name: "Marketing Campaign",
-            description: "Chiến dịch quảng bá sản phẩm mới",
-            progress: 40,
-            members: 3,
-            tasks: { total: 15, completed: 6 },
-            color: "bg-orange-500",
-        },
-        {
-            id: 3,
-            name: "Mobile App",
-            description: "Ứng dụng di động cho startup",
-            progress: 85,
-            members: 4,
-            tasks: { total: 32, completed: 27 },
-            color: "bg-green-500",
-        },
-    ];
+    const [workspaces, setWorkspaces] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchWorkspaces();
+    }, []);
+
+    const fetchWorkspaces = async () => {
+        try {
+            setIsLoading(true);
+            const response = await workspaceService.getAll();
+            setWorkspaces((response.workspaces || []).slice(0, 3));
+        } catch (error) {
+            console.error("Error fetching workspaces:", error);
+            toast.error("Không thể tải danh sách workspace");
+            setWorkspaces([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getWorkspaceColor = (id) => {
+        const colors = [
+            "bg-blue-500",
+            "bg-purple-500",
+            "bg-green-500",
+            "bg-orange-500",
+            "bg-pink-500",
+            "bg-red-500",
+            "bg-indigo-500",
+            "bg-teal-500",
+        ];
+        const index = id ? parseInt(id.slice(-1), 16) % colors.length : 0;
+        return colors[index];
+    };
 
     const recentActivities = [
         {
@@ -166,79 +176,115 @@ export default function DashboardPage() {
                                     Quản lý và theo dõi tiến độ các dự án
                                 </p>
                             </div>
-                            <Button>
-                                <Link to="/workspaces/new" className="flex items-center">
+                            <Button asChild>
+                                <Link to="/workspaces/new">
                                     <Plus className="mr-2 h-4 w-4" />
                                     Tạo mới
                                 </Link>
                             </Button>
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {workspaces.map((workspace) => (
-                                <Card
-                                    key={workspace.id}
-                                    className="hover:shadow-lg transition-shadow"
-                                >
-                                    <CardHeader>
-                                        <div className="flex items-start justify-between">
+                        {isLoading ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {[1, 2, 3].map((i) => (
+                                    <Card key={i}>
+                                        <CardHeader>
                                             <div className="flex items-center gap-3">
+                                                <Skeleton className="h-10 w-10 rounded-lg" />
+                                                <div className="flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-full" />
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Skeleton className="h-10 w-full" />
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : workspaces.length === 0 ? (
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center py-12">
+                                    <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
+                                    <p className="text-muted-foreground text-center mb-4">
+                                        Chưa có workspace nào. Tạo workspace đầu tiên của bạn!
+                                    </p>
+                                    <Button asChild>
+                                        <Link to="/workspaces/create">
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Tạo workspace
+                                        </Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {workspaces.map((workspace) => (
+                                    <Card
+                                        key={workspace.id}
+                                        className="hover:shadow-lg transition-shadow"
+                                    >
+                                        <CardHeader>
+                                            <div className="flex items-start gap-3">
                                                 <div
-                                                    className={`h-10 w-10 rounded-lg ${workspace.color} flex items-center justify-center`}
+                                                    className={`h-10 w-10 rounded-lg ${getWorkspaceColor(workspace.id)} flex items-center justify-center flex-shrink-0`}
                                                 >
                                                     <FolderKanban className="h-5 w-5 text-white" />
                                                 </div>
-                                                <div>
-                                                    <CardTitle className="text-lg">
-                                                        {workspace.name}
-                                                    </CardTitle>
-                                                    <CardDescription className="text-sm">
-                                                        {workspace.description}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <CardTitle className="text-lg truncate">
+                                                            {workspace.name}
+                                                        </CardTitle>
+                                                        <Badge
+                                                            variant={
+                                                                workspace.visibility === "private"
+                                                                    ? "secondary"
+                                                                    : "outline"
+                                                            }
+                                                            className="text-xs flex-shrink-0"
+                                                        >
+                                                            {workspace.visibility === "private" ? (
+                                                                <Lock className="h-3 w-3" />
+                                                            ) : (
+                                                                <Globe className="h-3 w-3" />
+                                                            )}
+                                                        </Badge>
+                                                    </div>
+                                                    <CardDescription className="text-sm line-clamp-2">
+                                                        {workspace.description || "Không có mô tả"}
                                                     </CardDescription>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Tiến độ</span>
-                                                <span className="font-medium">
-                                                    {workspace.progress}%
-                                                </span>
-                                            </div>
-                                            <Progress value={workspace.progress} />
-                                        </div>
-
-                                        <div className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-muted-foreground">
-                                                    {workspace.tasks.completed}/{workspace.tasks.total}{" "}
-                                                    tasks
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-muted-foreground">
-                                                    {workspace.members} thành viên
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <Button variant="outline" className="w-full bg-transparent">
-                                            <Link
-                                                to={`/workspaces/${workspace.id}`}
-                                                className="flex items-center justify-center"
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full bg-transparent"
+                                                asChild
                                             >
-                                                Xem chi tiết
-                                                <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                                                <Link to={`/workspaces/${workspace.id}`}>
+                                                    Xem chi tiết
+                                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {!isLoading && workspaces.length > 0 && (
+                            <div className="text-center">
+                                <Button variant="outline" asChild>
+                                    <Link to="/workspaces">
+                                        Xem tất cả workspaces
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Recent Activity */}

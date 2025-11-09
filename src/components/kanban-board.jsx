@@ -1,119 +1,219 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import cardService from "@/services/cardService";
+import commentService from "@/services/commentService";
+import workspaceService from "@/services/workspaceService";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Calendar, Paperclip, MessageSquare, MoreVertical } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar as CalendarIcon, Clock, User, MessageSquare, Send, Pencil, Trash2, X, Tag, MoreVertical, AlertCircle } from "lucide-react";
+import KanbanColumn from "./kanban/KanbanColumn";
+import TaskFormDialog from "./kanban/TaskFormDialog";
 
-export function KanbanBoard() {
-  const [columns, setColumns] = useState([
-    {
-      id: "todo",
-      title: "To Do",
-      tasks: [
-        {
-          id: 1,
-          title: "Thiết kế giao diện trang chủ",
-          description: "Tạo mockup và wireframe cho trang chủ",
-          assignee: { name: "Nguyễn Văn A", avatar: "" },
-          deadline: "2025-01-15",
-          priority: "high",
-          attachments: 3,
-          comments: 5,
-        },
-        {
-          id: 2,
-          title: "Viết API đăng nhập",
-          assignee: { name: "Trần Thị B", avatar: "" },
-          deadline: "2025-01-18",
-          priority: "medium",
-          comments: 2,
-        },
-        {
-          id: 3,
-          title: "Setup database schema",
-          priority: "high",
-          attachments: 1,
-        },
-      ],
-    },
-    {
-      id: "in-progress",
-      title: "In Progress",
-      tasks: [
-        {
-          id: 4,
-          title: "Tích hợp thanh toán Stripe",
-          assignee: { name: "Lê Văn C", avatar: "" },
-          deadline: "2025-01-20",
-          priority: "high",
-          comments: 8,
-        },
-        {
-          id: 5,
-          title: "Viết unit tests",
-          assignee: { name: "Phạm Thị D", avatar: "" },
-          priority: "low",
-          attachments: 2,
-        },
-      ],
-    },
-    {
-      id: "done",
-      title: "Done",
-      tasks: [
-        {
-          id: 6,
-          title: "Setup project repository",
-          assignee: { name: "Nguyễn Văn A", avatar: "" },
-          priority: "medium",
-          comments: 3,
-        },
-        {
-          id: 7,
-          title: "Cấu hình CI/CD pipeline",
-          assignee: { name: "Trần Thị B", avatar: "" },
-          priority: "medium",
-        },
-      ],
-    },
-  ]);
 
+export function KanbanBoard({ board, onUpdate }) {
+  const [columns, setColumns] = useState([]);
   const [draggedTask, setDraggedTask] = useState(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingCards, setIsLoadingCards] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
 
-  const handleDragStart = (task, columnId) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [startDate, setStartDate] = useState(null);
+  const [dueDate, setDueDate] = useState(null);
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
+  const [selectedLabels, setSelectedLabels] = useState([]);
+
+  const [boardMembers, setBoardMembers] = useState([]);
+  const [boardLabels, setBoardLabels] = useState([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [isLoadingLabels, setIsLoadingLabels] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
+
+  useEffect(() => {
+    if (board && board.lists) {
+      const transformedColumns = board.lists
+        .sort((a, b) => a.orderIdx - b.orderIdx)
+        .map((list) => ({
+          id: list.id,
+          title: list.name,
+          orderIdx: list.orderIdx,
+          isDone: list.isDone,
+          tasks: [],
+        }));
+      setColumns(transformedColumns);
+      loadCardsForAllLists(transformedColumns);
+      if (board.workspaceId) {
+        loadBoardMembers();
+      }
+    }
+  }, [board]);
+
+  useEffect(() => {
+    if (isAddTaskOpen && board?.id) {
+      loadBoardMembers();
+      loadBoardLabels();
+    }
+  }, [isAddTaskOpen, board?.id]);
+
+  const loadBoardMembers = useCallback(async () => {
+    if (!board?.workspaceId) return;
+    setIsLoadingMembers(true);
+    try {
+      const response = await workspaceService.getMembers(board.workspaceId);
+      const members = response.data?.members || response.members || [];
+      setBoardMembers(members);
+
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const currentMember = members.find(m => {
+        const memberUserId = m.userId || m.user?.id;
+        return memberUserId === currentUser.id;
+      });
+      
+      if (currentMember) {
+        setCurrentUserRole(currentMember.role);
+      } else {
+        setCurrentUserRole(null);
+      }
+    } catch (error) {
+      console.error("Error loading workspace members:", error);
+      setBoardMembers([]);
+      setCurrentUserRole(null);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  }, [board?.workspaceId]);
+
+  const loadBoardLabels = useCallback(async () => {
+    if (!board?.id) return;
+    setIsLoadingLabels(true);
+    try {
+      const response = await api.get(`/labels?boardId=${board.id}`);
+      setBoardLabels(response.data.labels || []);
+    } catch (error) {
+      console.error("Error loading board labels:", error);
+      setBoardLabels([]);
+    } finally {
+      setIsLoadingLabels(false);
+    }
+  }, [board?.id]);
+
+  const loadCardsForAllLists = useCallback(async (lists) => {
+    setIsLoadingCards(true);
+    try {
+      const cardsPromises = lists.map(list =>
+        cardService.getByListId(list.id).catch(err => {
+          console.error(`Error loading cards for list ${list.id}:`, err);
+          return { items: [] };
+        })
+      );
+
+      const cardsResults = await Promise.all(cardsPromises);
+
+      const updatedColumns = lists.map((list, index) => {
+        const cardsData = cardsResults[index];
+        const cards = cardsData.items || [];
+
+        const tasks = cards.map(card => ({
+          id: card.id,
+          title: card.title,
+          description: card.description,
+          priority: card.priority || 'medium',
+          deadline: card.dueDate,
+          startDate: card.startDate,
+          members: card.members || [],
+          assignee: card.members && card.members.length > 0 ? {
+            name: card.members[0].user?.fullName || 'Unknown',
+            avatar: card.members[0].user?.avatar
+          } : null,
+          attachments: 0,
+          comments: 0,
+          labels: card.labels || [],
+          orderIdx: card.orderIdx
+        }));
+
+        return {
+          ...list,
+          tasks: tasks.sort((a, b) => a.orderIdx - b.orderIdx)
+        };
+      });
+
+      setColumns(updatedColumns);
+    } catch (error) {
+      console.error("Error loading cards:", error);
+      toast.error("Không thể tải danh sách cards");
+    } finally {
+      setIsLoadingCards(false);
+    }
+  }, []);
+
+  const handleDragStart = useCallback((task, columnId) => {
     setDraggedTask({ task, columnId });
-  };
+  }, []);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
-  };
+  }, []);
 
-  const handleDrop = (targetColumnId) => {
+  const handleDrop = useCallback(async (targetColumnId) => {
     if (!draggedTask) return;
 
-    const sourceColumn = columns.find((col) => col.id === draggedTask.columnId);
+    const sourceColumnId = draggedTask.columnId;
+    const draggedCardId = draggedTask.task.id;
+
+    if (sourceColumnId === targetColumnId) {
+      setDraggedTask(null);
+      return;
+    }
+
+    const sourceColumn = columns.find((col) => col.id === sourceColumnId);
     const targetColumn = columns.find((col) => col.id === targetColumnId);
 
     if (!sourceColumn || !targetColumn) return;
 
+    const newOrderIdx = targetColumn.tasks.length;
+    const movedTask = { ...draggedTask.task, orderIdx: newOrderIdx };
+
     const newColumns = columns.map((col) => {
-      if (col.id === draggedTask.columnId) {
+      if (col.id === sourceColumnId) {
         return {
           ...col,
-          tasks: col.tasks.filter((t) => t.id !== draggedTask.task.id),
+          tasks: col.tasks.filter((t) => t.id !== draggedCardId),
         };
       }
       if (col.id === targetColumnId) {
         return {
           ...col,
-          tasks: [...col.tasks, draggedTask.task],
+          tasks: [...col.tasks, movedTask].sort((a, b) => a.orderIdx - b.orderIdx),
         };
       }
       return col;
@@ -121,9 +221,20 @@ export function KanbanBoard() {
 
     setColumns(newColumns);
     setDraggedTask(null);
-  };
 
-  const getPriorityColor = (priority) => {
+    try {
+      await cardService.move(draggedCardId, targetColumnId, newOrderIdx);
+      toast.success("Di chuyển công việc thành công!");
+    } catch (error) {
+      console.error("Error moving card:", error);
+      toast.error("Không thể di chuyển công việc. Vui lòng thử lại.");
+      
+      reloadCardsForList(sourceColumnId);
+      reloadCardsForList(targetColumnId);
+    }
+  }, [columns, draggedTask]);
+
+  const getPriorityColor = useCallback((priority) => {
     switch (priority) {
       case "high":
         return "bg-red-500 ring-2 ring-red-500/20";
@@ -134,148 +245,910 @@ export function KanbanBoard() {
       default:
         return "bg-gray-500 ring-2 ring-gray-500/20";
     }
-  };
+  }, []);
 
-  const openAddTask = (columnId) => {
+  const openAddTask = useCallback((columnId) => {
     setSelectedColumn(columnId);
     setIsAddTaskOpen(true);
-  };
+  }, []);
+
+  const handleCreateTask = useCallback(async () => {
+    if (!title.trim()) {
+      toast.error("Vui lòng nhập tiêu đề card");
+      return;
+    }
+
+    if (!selectedColumn) {
+      toast.error("Vui lòng chọn list");
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+
+      const cardData = {
+        boardId: board.id,
+        listId: selectedColumn,
+        title: title.trim(),
+        priority,
+      };
+
+      if (description && description.trim()) {
+        cardData.description = description.trim();
+      }
+
+      if (startDate) {
+        cardData.startDate = startDate.toISOString();
+      }
+
+      if (dueDate) {
+        cardData.dueDate = dueDate.toISOString();
+      }
+
+      if (selectedAssignees.length > 0) {
+        cardData.assigneeIds = selectedAssignees;
+      }
+
+      if (selectedLabels.length > 0) {
+        cardData.labelIds = selectedLabels;
+      }
+
+      const response = await cardService.create(cardData);
+      const newCard = response.card || response;
+
+      const optimisticTask = {
+        id: newCard.id,
+        title: newCard.title,
+        description: newCard.description || null,
+        priority: newCard.priority || 'medium',
+        deadline: newCard.dueDate || null,
+        startDate: newCard.startDate || null,
+        assignee: null,
+        attachments: newCard.attachments?.length || 0,
+        comments: 0,
+        labels: newCard.labels || [],
+        members: newCard.members || [],
+        orderIdx: newCard.orderIdx || 0,
+        key: newCard.key || null
+      };
+
+      if (newCard.members && newCard.members.length > 0) {
+        const firstMember = newCard.members[0];
+        if (firstMember.user) {
+          optimisticTask.assignee = {
+            name: firstMember.user.fullName,
+            avatar: null
+          };
+        }
+      }
+
+      setColumns(prevColumns =>
+        prevColumns.map(col =>
+          col.id === selectedColumn
+            ? { ...col, tasks: [...col.tasks, optimisticTask].sort((a, b) => a.orderIdx - b.orderIdx) }
+            : col
+        )
+      );
+
+      toast.success("Tạo card thành công!");
+
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      setStartDate(null);
+      setDueDate(null);
+      setSelectedAssignees([]);
+      setSelectedLabels([]);
+      setIsAddTaskOpen(false);
+    } catch (error) {
+      console.error("Error creating card:", error);
+      toast.error(error.message || "Không thể tạo card. Vui lòng thử lại.");
+      
+      reloadCardsForList(selectedColumn);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [selectedColumn, title, description, priority, startDate, dueDate, selectedAssignees, selectedLabels, board.id]);
+
+  const reloadCardsForList = useCallback(async (listId) => {
+    try {
+      const cardsData = await cardService.getByListId(listId);
+      const cards = cardsData.items || [];
+
+      const tasks = cards.map(card => ({
+        id: card.id,
+        title: card.title,
+        description: card.description,
+        priority: card.priority || 'medium',
+        deadline: card.dueDate,
+        startDate: card.startDate,
+        assignee: card.members && card.members.length > 0 ? {
+          name: card.members[0].user?.fullName || 'Unknown',
+          avatar: card.members[0].user?.avatar
+        } : null,
+        attachments: 0,
+        comments: 0,
+        labels: card.labels || [],
+        orderIdx: card.orderIdx
+      }));
+
+      setColumns(prevColumns =>
+        prevColumns.map(col =>
+          col.id === listId
+            ? { ...col, tasks: tasks.sort((a, b) => a.orderIdx - b.orderIdx) }
+            : col
+        )
+      );
+    } catch (error) {
+      console.error("Error reloading cards:", error);
+    }
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    setIsAddTaskOpen(false);
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setStartDate(null);
+    setDueDate(null);
+    setSelectedAssignees([]);
+    setSelectedLabels([]);
+  }, []);
+
+  const openEditTask = useCallback(async (task, columnId) => {
+    setSelectedColumn(columnId);
+    setTitle(task.title);
+    setDescription(task.description || "");
+    setPriority(task.priority || "medium");
+
+    try {
+      const response = await cardService.getById(task.id);
+      const fullCard = response.card || response;
+
+      setEditingTask(fullCard);
+
+      setStartDate(fullCard.startDate ? new Date(fullCard.startDate) : null);
+      setDueDate(fullCard.dueDate ? new Date(fullCard.dueDate) : null);
+
+      const assigneeIds = fullCard.members?.map(m => m.userId) || [];
+      setSelectedAssignees(assigneeIds);
+
+      const labelIds = fullCard.labels?.map(l => l.labelId) || [];
+      setSelectedLabels(labelIds);
+
+    } catch (error) {
+      console.error("Error loading card details for edit:", error);
+      setEditingTask(task);
+    }
+
+    if (board?.workspaceId) {
+      loadBoardMembers();
+      loadBoardLabels();
+    }
+
+    setIsEditTaskOpen(true);
+  }, [board?.workspaceId, loadBoardMembers, loadBoardLabels]);
+
+  const handleUpdateTask = useCallback(async () => {
+    if (!title.trim()) {
+      toast.error("Vui lòng nhập tiêu đề card");
+      return;
+    }
+
+    if (!editingTask) {
+      toast.error("Không tìm thấy card cần chỉnh sửa");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+
+      const updateData = {
+        title: title.trim(),
+        priority,
+      };
+
+      if (description && description.trim()) {
+        updateData.description = description.trim();
+      } else {
+        updateData.description = "";
+      }
+
+      if (startDate) {
+        updateData.startDate = startDate.toISOString();
+      }
+
+      if (dueDate) {
+        updateData.dueDate = dueDate.toISOString();
+      }
+
+      await cardService.update(editingTask.id, updateData);
+
+      if (editingTask.members) {
+        const currentMemberIds = editingTask.members.map(m => m.userId);
+
+        const toAdd = selectedAssignees.filter(id => !currentMemberIds.includes(id));
+
+        const toRemove = currentMemberIds.filter(id => !selectedAssignees.includes(id));
+
+        for (const userId of toAdd) {
+          try {
+            await cardService.assignMember(editingTask.id, userId);
+          } catch (err) {
+            console.error(`Failed to assign member ${userId}:`, err);
+          }
+        }
+
+        for (const userId of toRemove) {
+          try {
+            await cardService.removeMember(editingTask.id, userId);
+          } catch (err) {
+            console.error(`Failed to remove member ${userId}:`, err);
+          }
+        }
+      }
+
+      toast.success("Cập nhật card thành công!");
+
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      setStartDate(null);
+      setDueDate(null);
+      setSelectedAssignees([]);
+      setSelectedLabels([]);
+      setIsEditTaskOpen(false);
+      setEditingTask(null);
+    } catch (error) {
+      console.error("Error updating card:", error);
+      toast.error(error.response?.data?.error || "Không thể cập nhật card. Vui lòng thử lại.");
+      
+      reloadCardsForList(selectedColumn);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [selectedColumn, editingTask, title, description, priority, startDate, dueDate, selectedAssignees, selectedLabels, reloadCardsForList]);
+
+  const handleCloseEditDialog = useCallback(() => {
+    setIsEditTaskOpen(false);
+    setEditingTask(null);
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setStartDate(null);
+    setDueDate(null);
+    setSelectedAssignees([]);
+    setSelectedLabels([]);
+  }, []);
+
+  const confirmDeleteTask = useCallback((task, columnId) => {
+    setTaskToDelete({ task, columnId });
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteTask = useCallback(async () => {
+    if (!taskToDelete) return;
+
+    try {
+      setIsDeleting(true);
+
+      const { task, columnId } = taskToDelete;
+
+      // Optimistically remove the card from the UI immediately
+      setColumns(prevColumns =>
+        prevColumns.map(col =>
+          col.id === columnId
+            ? { ...col, tasks: col.tasks.filter(t => t.id !== task.id) }
+            : col
+        )
+      );
+
+      setDeleteDialogOpen(false);
+
+      await cardService.delete(task.id);
+
+      toast.success("Xóa card thành công!");
+
+      setTaskToDelete(null);
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      toast.error(error.message || "Không thể xóa card. Vui lòng thử lại.");
+      
+      if (taskToDelete) {
+        reloadCardsForList(taskToDelete.columnId);
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [taskToDelete, reloadCardsForList]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteDialogOpen(false);
+    setTaskToDelete(null);
+  }, []);
+
+  const loadComments = useCallback(async (cardId) => {
+    try {
+      setIsLoadingComments(true);
+      const response = await commentService.getByCardId(cardId);
+      setComments(response.comments || []);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  }, []);
+
+  const openCardDetail = useCallback(async (cardId) => {
+    try {
+      setIsLoadingDetail(true);
+      setIsDetailOpen(true);
+
+      const response = await cardService.getById(cardId);
+      setSelectedCard(response.card || response);
+
+      // Load comments for this card
+      loadComments(cardId);
+    } catch (error) {
+      console.error("Error loading card detail:", error);
+      toast.error("Không thể tải thông tin card");
+      setIsDetailOpen(false);
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  }, [loadComments]);
+
+  const handleAddComment = useCallback(async () => {
+    if (!newComment.trim()) {
+      toast.error("Vui lòng nhập nội dung comment");
+      return;
+    }
+
+    if (!selectedCard) return;
+
+    try {
+      setIsAddingComment(true);
+      const response = await commentService.create(selectedCard.id, {
+        bodyMd: newComment.trim()
+      });
+
+      setComments(prev => [...prev, response.comment]);
+      setNewComment("");
+      toast.success("Đã thêm comment");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast.error("Không thể thêm comment");
+    } finally {
+      setIsAddingComment(false);
+    }
+  }, [newComment, selectedCard]);
+
+  const handleEditComment = useCallback((comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentText(comment.bodyMd);
+  }, []);
+
+  const handleUpdateComment = useCallback(async (commentId) => {
+    if (!editingCommentText.trim()) {
+      toast.error("Vui lòng nhập nội dung comment");
+      return;
+    }
+
+    try {
+      const response = await commentService.update(commentId, {
+        bodyMd: editingCommentText.trim()
+      });
+
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, bodyMd: response.comment.bodyMd } : c
+      ));
+
+      setEditingCommentId(null);
+      setEditingCommentText("");
+      toast.success("Đã cập nhật comment");
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast.error("Không thể cập nhật comment");
+    }
+  }, [editingCommentText]);
+
+  const handleDeleteComment = useCallback(async (commentId) => {
+    if (!commentToDelete) return;
+
+    try {
+      setIsDeletingComment(true);
+      await commentService.delete(commentToDelete.id);
+
+      setComments(prev => prev.filter(c => c.id !== commentToDelete.id));
+
+      setDeleteCommentDialogOpen(false);
+      setCommentToDelete(null);
+      toast.success("Đã xóa comment");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Không thể xóa comment");
+    } finally {
+      setIsDeletingComment(false);
+    }
+  }, [commentToDelete]);
+
+  const confirmDeleteComment = useCallback((comment) => {
+    setCommentToDelete(comment);
+    setDeleteCommentDialogOpen(true);
+  }, []);
+
+  const handleCancelDeleteComment = useCallback(() => {
+    setDeleteCommentDialogOpen(false);
+    setCommentToDelete(null);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setIsDetailOpen(false);
+    setSelectedCard(null);
+    setComments([]);
+    setNewComment("");
+    setEditingCommentId(null);
+    setEditingCommentText("");
+    setDeleteCommentDialogOpen(false);
+    setCommentToDelete(null);
+  }, []);
+
+  const getColumnBorderColor = useCallback((columnTitle) => {
+    const title = columnTitle.toLowerCase();
+    if (title === 'todo') return 'border-cyan-100';
+    if (title === 'in progress') return 'border-red-100';
+    if (title === 'done') return 'border-green-100';
+    return 'border-border';
+  }, []);
+
+  if (!board || columns.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Chưa có danh sách nào</h3>
+          <p className="text-muted-foreground text-center mb-6">
+            Board này chưa có danh sách công việc
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="flex gap-6 overflow-x-auto pb-6 px-2">
       {columns.map((column) => (
-        <div
+        <KanbanColumn
           key={column.id}
-          className="flex-shrink-0 w-80"
+          column={column}
+          draggedTask={draggedTask}
+          currentUserRole={currentUserRole}
+          isLoadingCards={isLoadingCards}
           onDragOver={handleDragOver}
-          onDrop={() => handleDrop(column.id)}
-        >
-          <Card className="h-full bg-muted/30 border-2 shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="pb-4 bg-background/50 backdrop-blur-sm rounded-t-lg border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base font-bold tracking-tight">{column.title}</CardTitle>
-                  <Badge variant="secondary" className="rounded-full h-6 w-6 flex items-center justify-center p-0 font-semibold bg-primary/10 text-primary border border-primary/20">
-                    {column.tasks.length}
-                  </Badge>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openAddTask(column.id)}
-                  className="hover:bg-primary/10 hover:text-primary transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
-              {column.tasks.map((task) => (
-                <Card
-                  key={task.id}
-                  className="cursor-move hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 transition-all duration-200 bg-background border-2 group"
-                  draggable
-                  onDragStart={() => handleDragStart(task, column.id)}
-                >
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{task.title}</h4>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 -mt-1 -mr-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
-                    </div>
-
-                    {task.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{task.description}</p>
-                    )}
-
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${getPriorityColor(task.priority)} shadow-sm`} />
-                      <span className="text-xs font-medium text-muted-foreground capitalize">{task.priority} priority</span>
-                    </div>
-
-                    {task.deadline && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1.5 rounded-md">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span className="font-medium">{new Date(task.deadline).toLocaleDateString("vi-VN")}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-3">
-                        {task.attachments && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-                            <Paperclip className="h-3.5 w-3.5" />
-                            <span className="font-medium">{task.attachments}</span>
-                          </div>
-                        )}
-                        {task.comments && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            <span className="font-medium">{task.comments}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {task.assignee && (
-                        <Avatar className="h-7 w-7 border-2 border-background shadow-sm ring-2 ring-primary/10">
-                          <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">{task.assignee.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+          onDrop={handleDrop}
+          onAddTask={openAddTask}
+          onDragStart={handleDragStart}
+          onDragEnd={() => setDraggedTask(null)}
+          onEditTask={openEditTask}
+          onDeleteTask={confirmDeleteTask}
+          onCardClick={openCardDetail}
+          getPriorityColor={getPriorityColor}
+          getColumnBorderColor={getColumnBorderColor}
+        />
       ))}
 
-      {/* Add Task Dialog */}
-      <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Tạo task mới</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Thêm công việc mới vào board của bạn
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="task-title" className="text-sm font-semibold">Tiêu đề</Label>
-              <Input
-                id="task-title"
-                placeholder="Nhập tiêu đề task..."
-                className="border-2 focus:border-primary"
-              />
+      <TaskFormDialog
+        isOpen={isAddTaskOpen}
+        isEditMode={false}
+        title={title}
+        description={description}
+        priority={priority}
+        startDate={startDate}
+        dueDate={dueDate}
+        selectedAssignees={selectedAssignees}
+        selectedLabels={selectedLabels}
+        boardMembers={boardMembers}
+        boardLabels={boardLabels}
+        isLoadingMembers={isLoadingMembers}
+        isLoadingLabels={isLoadingLabels}
+        isCreating={isCreating}
+        isUpdating={false}
+        onClose={handleCloseDialog}
+        onSubmit={handleCreateTask}
+        onTitleChange={setTitle}
+        onDescriptionChange={setDescription}
+        onPriorityChange={setPriority}
+        onStartDateChange={setStartDate}
+        onDueDateChange={setDueDate}
+        onAssigneesChange={setSelectedAssignees}
+        onLabelsChange={setSelectedLabels}
+      />
+
+      <TaskFormDialog
+        isOpen={isEditTaskOpen}
+        isEditMode={true}
+        title={title}
+        description={description}
+        priority={priority}
+        startDate={startDate}
+        dueDate={dueDate}
+        selectedAssignees={selectedAssignees}
+        selectedLabels={selectedLabels}
+        boardMembers={boardMembers}
+        boardLabels={boardLabels}
+        isLoadingMembers={isLoadingMembers}
+        isLoadingLabels={isLoadingLabels}
+        isCreating={false}
+        isUpdating={isUpdating}
+        onClose={handleCloseEditDialog}
+        onSubmit={handleUpdateTask}
+        onTitleChange={setTitle}
+        onDescriptionChange={setDescription}
+        onPriorityChange={setPriority}
+        onStartDateChange={setStartDate}
+        onDueDateChange={setDueDate}
+        onAssigneesChange={setSelectedAssignees}
+        onLabelsChange={setSelectedLabels}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa card</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa card "<span className="font-semibold text-foreground">{taskToDelete?.task?.title}</span>"?
+              Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete} disabled={isDeleting}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Đang xóa..." : "Xóa card"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteCommentDialogOpen} onOpenChange={setDeleteCommentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa bình luận</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa bình luận này?
+              Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDeleteComment} disabled={isDeletingComment}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteComment}
+              disabled={isDeletingComment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingComment ? "Đang xóa..." : "Xóa bình luận"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isDetailOpen} onOpenChange={handleCloseDetail}>
+        <DialogContent className="sm:max-w-[650px]">
+          {isLoadingDetail ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center space-y-3">
+                <div className="h-12 w-12 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Đang tải thông tin card...</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="task-description" className="text-sm font-semibold">Mô tả</Label>
-              <Textarea
-                id="task-description"
-                placeholder="Mô tả chi tiết về task..."
-                rows={4}
-                className="border-2 focus:border-primary resize-none"
-              />
+          ) : selectedCard ? (
+            <>
+              <DialogHeader className="space-y-2 pb-4 border-b">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 space-y-2">
+                    <DialogTitle className="text-xl font-bold leading-tight">{selectedCard.title}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Chi tiết thẻ công việc {selectedCard.title}
+                    </DialogDescription>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="font-mono text-xs">
+                        #{selectedCard.id?.slice(0, 8)}
+                      </Badge>
+                      {selectedCard.list && (
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedCard.list.name}
+                        </Badge>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-2.5 w-2.5 rounded-full ${getPriorityColor(selectedCard.priority)}`} />
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {selectedCard.priority === 'high' && 'Cao'}
+                          {selectedCard.priority === 'medium' && 'Trung bình'}
+                          {selectedCard.priority === 'low' && 'Thấp'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <ScrollArea className="max-h-[calc(85vh-180px)]">
+                <div className="space-y-5 py-4 pr-4">
+                  {selectedCard.description && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Mô tả</span>
+                      </div>
+                      <div className="bg-muted/50 rounded-md p-3">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedCard.description}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(selectedCard.startDate || selectedCard.dueDate) && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Thời gian</span>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedCard.startDate && (
+                          <div className="flex items-center gap-3 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground min-w-[90px]">Ngày bắt đầu:</span>
+                            <span className="font-medium">
+                              {format(new Date(selectedCard.startDate), "dd/MM/yyyy")}
+                            </span>
+                          </div>
+                        )}
+                        {selectedCard.dueDate && (
+                          <div className="flex items-center gap-3 text-sm">
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground min-w-[90px]">Hạn chót:</span>
+                            <span className="font-medium">
+                              {format(new Date(selectedCard.dueDate), "dd/MM/yyyy")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCard.members && selectedCard.members.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <User className="h-4 w-4" />
+                        <span>Thành viên ({selectedCard.members.length})</span>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedCard.members.map((member) => (
+                          <div key={member.userId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
+                            <Avatar className="h-8 w-8 border">
+                              <AvatarImage src={member.user?.avatar} />
+                              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                                {member.user?.fullName?.charAt(0) || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{member.user?.fullName || 'Unknown User'}</p>
+                              <p className="text-xs text-muted-foreground">{member.user?.email}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCard.labels && selectedCard.labels.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Tag className="h-4 w-4" />
+                        <span>Nhãn ({selectedCard.labels.length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCard.labels.map((labelItem, index) => {
+                          const labelData = labelItem.label || labelItem;
+                          const labelId = labelItem.labelId || labelItem.id || index;
+                          
+                          return (
+                            <Badge
+                              key={labelId}
+                              variant="outline"
+                              className="px-3 py-1"
+                              style={{
+                                backgroundColor: labelData.color ? `${labelData.color}20` : undefined,
+                                borderColor: labelData.color || undefined,
+                                color: labelData.color || undefined
+                              }}
+                            >
+                              {labelData.name || 'Label'}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Bình luận ({comments.length})</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Thêm bình luận..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="min-h-[80px] resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.ctrlKey) {
+                            handleAddComment();
+                          }
+                        }}
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">Nhấn Ctrl+Enter để gửi</p>
+                        <Button
+                          size="sm"
+                          onClick={handleAddComment}
+                          disabled={isAddingComment || !newComment.trim()}
+                        >
+                          <Send className="mr-2 h-3.5 w-3.5" />
+                          {isAddingComment ? "Đang gửi..." : "Gửi"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Comments List */}
+                    {isLoadingComments ? (
+                      <div className="flex justify-center py-4">
+                        <div className="h-6 w-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                    ) : comments.length > 0 ? (
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7 border">
+                                  <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                                    {comment.author?.fullName?.charAt(0) || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-sm font-medium">{comment.author?.fullName || 'Unknown'}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(comment.createdAt), "dd/MM/yyyy HH:mm")}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEditComment(comment)}>
+                                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                                    Chỉnh sửa
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => confirmDeleteComment(comment)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                    Xóa
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+
+                            {editingCommentId === comment.id ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editingCommentText}
+                                  onChange={(e) => setEditingCommentText(e.target.value)}
+                                  className="min-h-[60px] resize-none"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateComment(comment.id)}
+                                  >
+                                    Lưu
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setEditingCommentText("");
+                                    }}
+                                  >
+                                    Hủy
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap pl-9">
+                                {comment.bodyMd}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Chưa có bình luận nào
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t space-y-1 text-xs text-muted-foreground">
+                    <p>Tạo lúc: {format(new Date(selectedCard.createdAt), "dd/MM/yyyy HH:mm")}</p>
+                    <p>Cập nhật: {format(new Date(selectedCard.updatedAt), "dd/MM/yyyy HH:mm")}</p>
+                  </div>
+                </div>
+              </ScrollArea>
+
+              {currentUserRole && currentUserRole !== 'guest' && (
+                <div className="flex justify-end gap-2 pt-4 border-t mt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleCloseDetail();
+                      openEditTask(
+                        {
+                          id: selectedCard.id,
+                          title: selectedCard.title,
+                          description: selectedCard.description,
+                          priority: selectedCard.priority
+                        },
+                        selectedCard.listId
+                      );
+                    }}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Chỉnh sửa
+                  </Button>
+                  {['owner', 'admin'].includes(currentUserRole) && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleCloseDetail();
+                        confirmDeleteTask(
+                          {
+                            id: selectedCard.id,
+                            title: selectedCard.title
+                          },
+                          selectedCard.listId
+                        );
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Xóa
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-muted-foreground">Không tìm thấy thông tin card</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="task-deadline" className="text-sm font-semibold">Deadline</Label>
-              <Input
-                id="task-deadline"
-                type="date"
-                className="border-2 focus:border-primary"
-              />
-            </div>
-            <Button className="w-full h-11 font-semibold shadow-md hover:shadow-lg transition-shadow">
-              <Plus className="mr-2 h-4 w-4" />
-              Tạo task
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
