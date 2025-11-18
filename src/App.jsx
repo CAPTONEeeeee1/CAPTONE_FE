@@ -17,6 +17,8 @@ import SettingsPage from './pages/Setting';
 import CreateWorkspacePage from './pages/CreateWorkspace';
 import CreateBoardPage from './pages/CreateBoard';
 import EditBoardPage from './pages/EditBoard';
+import AcceptInvitationPage from './pages/AcceptInvitation';
+import VerifyOTPPage from './pages/VerifyOTP';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 
@@ -43,6 +45,7 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route path="/verify-otp" element={<VerifyOTPPage />} />
 
         {/* Protected Routes */}
         <Route
@@ -138,6 +141,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invitations/:invitationId"
+          element={
+            <ProtectedRoute>
+              <AcceptInvitationPage />
             </ProtectedRoute>
           }
         />

@@ -15,6 +15,8 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("login");
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
   // Login form state
   const [loginForm, setLoginForm] = useState({
@@ -41,6 +43,11 @@ export default function AuthPage() {
   const validateRegisterForm = () => {
     const newErrors = {};
 
+    // Password strength regex
+    const hasUpperCase = /[A-Z]/;
+    const hasNumber = /[0-9]/;
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
+
     if (!registerForm.fullName.trim()) {
       newErrors.fullName = "Vui lòng nhập họ và tên";
     }
@@ -59,8 +66,14 @@ export default function AuthPage() {
 
     if (!registerForm.password) {
       newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (registerForm.password.length < 6) {
-      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    } else if (registerForm.password.length < 12) {
+      newErrors.password = "Mật khẩu phải có ít nhất 12 ký tự";
+    } else if (!hasUpperCase.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ hoa";
+    } else if (!hasNumber.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số";
+    } else if (!hasSpecialChar.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
     }
 
     if (!registerForm.confirmPassword) {
@@ -101,26 +114,34 @@ export default function AuthPage() {
     setErrors({});
 
     try {
-      await authService.register(registerForm);
+      const response = await authService.register(registerForm);
 
-      toast.success("Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.");
-
-      setRegisterForm({
-        fullName: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirmPassword: ""
+      toast.success("Đăng ký thành công! Mã OTP đã được gửi đến email của bạn.", {
+        duration: 4000
       });
 
-      setTimeout(() => setActiveTab("login"), 1000);
+      // Redirect to OTP verification page
+      setTimeout(() => {
+        navigate('/verify-otp', {
+          state: {
+            userId: response.user.id,
+            email: response.user.email
+          }
+        });
+      }, 1000);
 
     } catch (error) {
       console.error("Registration error:", error);
 
       if (error.status === 409) {
-        toast.error("Email đã được sử dụng. Vui lòng sử dụng email khác.");
-        setErrors({ email: "Email đã tồn tại" });
+        const errorMsg = error.data?.error || error.message;
+        toast.error(errorMsg);
+
+        if (errorMsg.includes('Email')) {
+          setErrors({ email: "Email đã tồn tại" });
+        } else if (errorMsg.includes('Phone')) {
+          setErrors({ phone: "Số điện thoại đã được sử dụng" });
+        }
       } else if (error.status === 400) {
         toast.error(error.message || "Thông tin đăng ký không hợp lệ");
       } else {
@@ -139,6 +160,7 @@ export default function AuthPage() {
 
     setIsLoading(true);
     setErrors({});
+    setShowResendVerification(false);
 
     try {
       await authService.login(loginForm);
@@ -157,13 +179,52 @@ export default function AuthPage() {
     } catch (error) {
       console.error("Login error:", error);
 
-      if (error.status === 401) {
+      // Check if email not verified
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(loginForm.email);
+        setShowResendVerification(true);
+        toast.error("Email chưa được xác thực. Vui lòng kiểm tra hộp thư của bạn.", {
+          duration: 5000
+        });
+      } else if (error.status === 401) {
         toast.error("Email hoặc mật khẩu không đúng");
       } else if (error.status === 400) {
         toast.error(error.message || "Thông tin đăng nhập không hợp lệ");
       } else {
         toast.error(error.message || "Đăng nhập thất bại. Vui lòng thử lại.");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle resend verification email
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể gửi lại email xác thực');
+      }
+
+      toast.success("Email xác thực đã được gửi lại! Vui lòng kiểm tra hộp thư.", {
+        duration: 5000
+      });
+      setShowResendVerification(false);
+
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      toast.error(error.message || "Không thể gửi lại email. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }
@@ -239,6 +300,24 @@ export default function AuthPage() {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                   </Button>
+
+                  {showResendVerification && (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-2">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        Email chưa được xác thực. Vui lòng kiểm tra hộp thư của bạn.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={handleResendVerification}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Đang gửi..." : "Gửi lại email xác thực"}
+                      </Button>
+                    </div>
+                  )}
                 </form>
 
                 <div className="relative">
@@ -331,7 +410,7 @@ export default function AuthPage() {
                     <Input
                       id="register-password"
                       type="password"
-                      placeholder="Abcd1234@"
+                      placeholder="Ví dụ: MyP@ssw0rd123"
                       value={registerForm.password}
                       onChange={(e) => handleInputChange('register', 'password', e.target.value)}
                       className={errors.password ? "border-destructive" : ""}
@@ -339,6 +418,15 @@ export default function AuthPage() {
                     {errors.password && (
                       <p className="text-sm text-destructive">{errors.password}</p>
                     )}
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p className="font-medium">Yêu cầu mật khẩu:</p>
+                      <ul className="list-disc list-inside space-y-0.5 ml-2">
+                        <li>Tối thiểu 12 ký tự</li>
+                        <li>Có ít nhất 1 chữ hoa (A-Z)</li>
+                        <li>Có ít nhất 1 chữ số (0-9)</li>
+                        <li>Có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -346,7 +434,7 @@ export default function AuthPage() {
                     <Input
                       id="register-confirm"
                       type="password"
-                      placeholder="Abcd1234@"
+                      placeholder="Nhập lại mật khẩu"
                       value={registerForm.confirmPassword}
                       onChange={(e) => handleInputChange('register', 'confirmPassword', e.target.value)}
                       className={errors.confirmPassword ? "border-destructive" : ""}

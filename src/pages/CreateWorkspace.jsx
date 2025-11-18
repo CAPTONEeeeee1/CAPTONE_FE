@@ -43,8 +43,24 @@ export default function CreateWorkspacePage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Validation
         if (!name.trim()) {
             toast.error("Vui lòng nhập tên workspace");
+            return;
+        }
+
+        if (name.trim().length < 3) {
+            toast.error("Tên workspace phải có ít nhất 3 ký tự");
+            return;
+        }
+
+        if (name.trim().length > 100) {
+            toast.error("Tên workspace không được vượt quá 100 ký tự");
+            return;
+        }
+
+        if (description.trim().length > 500) {
+            toast.error("Mô tả không được vượt quá 500 ký tự");
             return;
         }
 
@@ -123,8 +139,13 @@ export default function CreateWorkspacePage() {
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
                                                 required
+                                                minLength={3}
+                                                maxLength={100}
                                                 className="border-2"
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                {name.length}/100 ký tự (tối thiểu 3 ký tự)
+                                            </p>
                                         </div>
 
                                         <div className="space-y-2">
@@ -135,8 +156,12 @@ export default function CreateWorkspacePage() {
                                                 rows={4}
                                                 value={description}
                                                 onChange={(e) => setDescription(e.target.value)}
+                                                maxLength={500}
                                                 className="border-2 resize-none"
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                {description.length}/500 ký tự
+                                            </p>
                                         </div>
                                     </CardContent>
                                 </Card>

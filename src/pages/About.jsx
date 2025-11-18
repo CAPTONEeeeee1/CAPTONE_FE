@@ -44,7 +44,7 @@ export default function AboutPage() {
                     </div>
                 </section>
 
-                {/* Comparison Section */}
+                {/* Comparison Section
                 <section className="container mx-auto max-w-7xl py-20 bg-muted/30 px-4 sm:px-6 lg:px-8">
                     <div className="space-y-8">
                         <div className="text-center space-y-4">
@@ -101,7 +101,7 @@ export default function AboutPage() {
                             </CardContent>
                         </Card>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Team Section */}
                 <section className="container mx-auto max-w-7xl py-20 px-4 sm:px-6 lg:px-8">

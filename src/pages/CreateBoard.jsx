@@ -235,8 +235,13 @@ export default function CreateBoardPage() {
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
                                                 required
+                                                minLength={3}
+                                                maxLength={100}
                                                 className="border-2"
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                {name.length}/100 ký tự (tối thiểu 3 ký tự)
+                                            </p>
                                         </div>
 
                                         <div className="space-y-2">
@@ -250,12 +255,15 @@ export default function CreateBoardPage() {
                                                 id="keySlug"
                                                 placeholder="VD: PROJ, DEV, SPRINT..."
                                                 value={keySlug}
-                                                onChange={(e) => setKeySlug(e.target.value.toUpperCase())}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                                    setKeySlug(value);
+                                                }}
                                                 maxLength={16}
                                                 className="border-2 font-mono uppercase"
                                             />
                                             <p className="text-xs text-muted-foreground">
-                                                Prefix cho card keys (VD: PROJ-123, DEV-45). Từ 2-16 ký tự chữ IN HOA hoặc số.
+                                                {keySlug.length}/16 ký tự. Prefix cho card keys (VD: PROJ-123, DEV-45). Chỉ chữ IN HOA (A-Z) và số (0-9), từ 2-16 ký tự.
                                             </p>
                                         </div>
 

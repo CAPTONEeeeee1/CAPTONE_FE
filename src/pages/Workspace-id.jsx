@@ -388,15 +388,13 @@ export default function WorkspacePage() {
                                                     <SelectValue placeholder="Chọn vai trò" />
                                                 </SelectTrigger>
                                                 <SelectContent>
+                                                    <SelectItem value="admin">Leader - Trưởng nhóm</SelectItem>
                                                     <SelectItem value="member">Member - Thành viên</SelectItem>
-                                                    <SelectItem value="admin">Admin - Quản trị viên</SelectItem>
-                                                    <SelectItem value="guest">Guest - Khách</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <p className="text-xs text-muted-foreground">
-                                                {selectedRole === "admin" && "Admin có thể quản lý workspace và mời thành viên mới"}
+                                                {selectedRole === "admin" && "Leader có thể quản lý workspace và mời thành viên mới"}
                                                 {selectedRole === "member" && "Member có thể tạo và quản lý boards"}
-                                                {selectedRole === "guest" && "Guest chỉ có thể xem nội dung"}
                                             </p>
                                         </div>
                                     </div>
@@ -481,7 +479,7 @@ export default function WorkspacePage() {
                                                     variant={member.role === "owner" ? "default" : member.role === "admin" ? "secondary" : "outline"}
                                                 >
                                                     {member.role === "owner" && "Owner"}
-                                                    {member.role === "admin" && "Admin"}
+                                                    {member.role === "admin" && "Leader"}
                                                     {member.role === "member" && "Member"}
                                                     {member.role === "guest" && "Guest"}
                                                 </Badge>
@@ -738,8 +736,8 @@ export default function WorkspacePage() {
                                 <SelectContent>
                                     <SelectItem value="admin">
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="secondary" className="text-xs">Admin</Badge>
-                                            <span className="text-xs text-muted-foreground">Quản trị viên</span>
+                                            <Badge variant="secondary" className="text-xs">Leader</Badge>
+                                            <span className="text-xs text-muted-foreground">Trưởng nhóm</span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="member">
@@ -748,18 +746,11 @@ export default function WorkspacePage() {
                                             <span className="text-xs text-muted-foreground">Thành viên</span>
                                         </div>
                                     </SelectItem>
-                                    <SelectItem value="guest">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-xs">Guest</Badge>
-                                            <span className="text-xs text-muted-foreground">Khách</span>
-                                        </div>
-                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
-                                {newRole === "admin" && "Admin có thể quản lý workspace, mời và xóa thành viên"}
+                                {newRole === "admin" && "Leader có thể quản lý workspace, mời và xóa thành viên"}
                                 {newRole === "member" && "Member có thể tạo và quản lý boards"}
-                                {newRole === "guest" && "Guest chỉ có thể xem nội dung"}
                             </p>
                         </div>
                     </div>

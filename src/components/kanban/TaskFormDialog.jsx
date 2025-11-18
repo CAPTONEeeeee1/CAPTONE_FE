@@ -130,6 +130,7 @@ const TaskFormDialog = memo(({
                     mode="single"
                     selected={startDate}
                     onSelect={onStartDateChange}
+                    disabled={(date) => dueDate ? date > dueDate : false}
                     initialFocus
                   />
                   {startDate && (
@@ -143,6 +144,11 @@ const TaskFormDialog = memo(({
                         <X className="h-3 w-3 mr-1" />
                         Xóa ngày
                       </Button>
+                    </div>
+                  )}
+                  {dueDate && (
+                    <div className="px-3 pb-2 text-xs text-muted-foreground">
+                      Không được sau ngày deadline
                     </div>
                   )}
                 </PopoverContent>
@@ -167,6 +173,7 @@ const TaskFormDialog = memo(({
                     mode="single"
                     selected={dueDate}
                     onSelect={onDueDateChange}
+                    disabled={(date) => startDate ? date < startDate : false}
                     initialFocus
                   />
                   {dueDate && (
@@ -180,6 +187,11 @@ const TaskFormDialog = memo(({
                         <X className="h-3 w-3 mr-1" />
                         Xóa ngày
                       </Button>
+                    </div>
+                  )}
+                  {startDate && (
+                    <div className="px-3 pb-2 text-xs text-muted-foreground">
+                      Không được trước ngày bắt đầu
                     </div>
                   )}
                 </PopoverContent>

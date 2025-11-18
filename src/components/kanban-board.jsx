@@ -98,7 +98,7 @@ export function KanbanBoard({ board, onUpdate }) {
         const memberUserId = m.userId || m.user?.id;
         return memberUserId === currentUser.id;
       });
-      
+
       if (currentMember) {
         setCurrentUserRole(currentMember.role);
       } else {
@@ -228,7 +228,7 @@ export function KanbanBoard({ board, onUpdate }) {
     } catch (error) {
       console.error("Error moving card:", error);
       toast.error("Không thể di chuyển công việc. Vui lòng thử lại.");
-      
+
       reloadCardsForList(sourceColumnId);
       reloadCardsForList(targetColumnId);
     }
@@ -260,6 +260,12 @@ export function KanbanBoard({ board, onUpdate }) {
 
     if (!selectedColumn) {
       toast.error("Vui lòng chọn list");
+      return;
+    }
+
+    // Validate dates
+    if (startDate && dueDate && startDate > dueDate) {
+      toast.error("Ngày bắt đầu không được lớn hơn ngày deadline");
       return;
     }
 
@@ -330,7 +336,23 @@ export function KanbanBoard({ board, onUpdate }) {
         )
       );
 
-      toast.success("Tạo card thành công!");
+      // Show success message with notification info
+      if (selectedAssignees.length > 0) {
+        const assigneeNames = newCard.members
+          ?.map(m => m.user?.fullName)
+          .filter(Boolean)
+          .join(', ') || `${selectedAssignees.length} thành viên`;
+
+        toast.success(
+          `Tạo card thành công! Đã gửi thông báo đến ${assigneeNames}`,
+          {
+            description: "Thành viên đã nhận thông báo qua hệ thống và email",
+            duration: 4000
+          }
+        );
+      } else {
+        toast.success("Tạo card thành công!");
+      }
 
       setTitle("");
       setDescription("");
@@ -343,7 +365,7 @@ export function KanbanBoard({ board, onUpdate }) {
     } catch (error) {
       console.error("Error creating card:", error);
       toast.error(error.message || "Không thể tạo card. Vui lòng thử lại.");
-      
+
       reloadCardsForList(selectedColumn);
     } finally {
       setIsCreating(false);
@@ -440,6 +462,12 @@ export function KanbanBoard({ board, onUpdate }) {
       return;
     }
 
+    // Validate dates
+    if (startDate && dueDate && startDate > dueDate) {
+      toast.error("Ngày bắt đầu không được lớn hơn ngày deadline");
+      return;
+    }
+
     try {
       setIsUpdating(true);
 
@@ -486,9 +514,28 @@ export function KanbanBoard({ board, onUpdate }) {
             console.error(`Failed to remove member ${userId}:`, err);
           }
         }
-      }
 
-      toast.success("Cập nhật card thành công!");
+        // Show notification message if new members were added
+        if (toAdd.length > 0) {
+          const newMemberNames = boardMembers
+            .filter(m => toAdd.includes(m.userId || m.user?.id))
+            .map(m => m.user?.fullName || m.fullName)
+            .filter(Boolean)
+            .join(', ') || `${toAdd.length} thành viên`;
+
+          toast.success(
+            `Cập nhật card thành công! Đã gửi thông báo đến ${newMemberNames}`,
+            {
+              description: "Thành viên mới đã nhận thông báo qua hệ thống và email",
+              duration: 4000
+            }
+          );
+        } else {
+          toast.success("Cập nhật card thành công!");
+        }
+      } else {
+        toast.success("Cập nhật card thành công!");
+      }
 
       setTitle("");
       setDescription("");
@@ -502,7 +549,7 @@ export function KanbanBoard({ board, onUpdate }) {
     } catch (error) {
       console.error("Error updating card:", error);
       toast.error(error.response?.data?.error || "Không thể cập nhật card. Vui lòng thử lại.");
-      
+
       reloadCardsForList(selectedColumn);
     } finally {
       setIsUpdating(false);
@@ -553,7 +600,7 @@ export function KanbanBoard({ board, onUpdate }) {
     } catch (error) {
       console.error("Error deleting card:", error);
       toast.error(error.message || "Không thể xóa card. Vui lòng thử lại.");
-      
+
       if (taskToDelete) {
         reloadCardsForList(taskToDelete.columnId);
       }
@@ -957,7 +1004,7 @@ export function KanbanBoard({ board, onUpdate }) {
                         {selectedCard.labels.map((labelItem, index) => {
                           const labelData = labelItem.label || labelItem;
                           const labelId = labelItem.labelId || labelItem.id || index;
-                          
+
                           return (
                             <Badge
                               key={labelId}
