@@ -1,31 +1,48 @@
-import './App.css'
+import "./App.css";
 import { Routes, Route } from "react-router-dom";
-import React from 'react';
-import HomePage from './pages/Home';
-import AboutPage from './pages/About';
-import ContactPage from './pages/Contact';
-import AuthPage from './pages/Auth';
-import DashboardPage from './pages/Dashboard';
-import WorkspacesPage from './pages/WorkSpace';
-import ProfilePage from './pages/Profile';
-import NotificationsPage from './pages/Notification';
-import WorkspacePage from './pages/Workspace-id';
-import BoardPage from './pages/BoardPage';
-import ReportsPage from './pages/Report';
-import ReportDetailPage from './pages/ReportDetail';
-import SettingsPage from './pages/Setting';
-import CreateWorkspacePage from './pages/CreateWorkspace';
-import CreateBoardPage from './pages/CreateBoard';
-import EditBoardPage from './pages/EditBoard';
-import AcceptInvitationPage from './pages/AcceptInvitation';
-import VerifyOTPPage from './pages/VerifyOTP';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { PublicRoute } from './components/PublicRoute';
+import React from "react";
+
+import HomePage from "./pages/Home";
+import AboutPage from "./pages/About";
+import ContactPage from "./pages/Contact";
+import AuthPage from "./pages/Auth";
+import DashboardPage from "./pages/Dashboard";
+import WorkspacesPage from "./pages/WorkSpace";
+import ProfilePage from "./pages/Profile";
+import NotificationsPage from "./pages/Notification";
+import WorkspacePage from "./pages/Workspace-id";
+import BoardPage from "./pages/BoardPage";
+import ReportsPage from "./pages/Report";
+import ReportDetailPage from "./pages/ReportDetail";
+import SettingsPage from "./pages/Setting";
+import CreateWorkspacePage from "./pages/CreateWorkspace";
+import CreateBoardPage from "./pages/CreateBoard";
+import EditBoardPage from "./pages/EditBoard";
+import AcceptInvitationPage from "./pages/AcceptInvitation";
+import VerifyOTPPage from "./pages/VerifyOTP";
+
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PublicRoute } from "./components/PublicRoute";
+
+// ===== ADMIN PAGES =====
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminBoardsPage from "./pages/admin/AdminBoardsPage";
+import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 function App() {
   return (
     <>
       <Routes>
+        {/* ===== ADMIN ROUTES (tạm thời không check login để bạn dev UI) ===== */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="boards" element={<AdminBoardsPage />} />
+          <Route path="payments" element={<AdminPaymentsPage />} />
+        </Route>
+
         {/* Public Routes */}
         <Route
           path="/"
@@ -154,7 +171,7 @@ function App() {
         />
       </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
