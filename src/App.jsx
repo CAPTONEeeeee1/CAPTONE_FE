@@ -19,6 +19,7 @@ import CreateBoardPage from './pages/CreateBoard';
 import EditBoardPage from './pages/EditBoard';
 import AcceptInvitationPage from './pages/AcceptInvitation';
 import VerifyOTPPage from './pages/VerifyOTP';
+import AuthCallback from './pages/AuthCallback'; // *** THÊM IMPORT NÀY ***
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 
@@ -46,6 +47,9 @@ function App() {
           }
         />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
+
+        {/* === THÊM ROUTE CHO GOOGLE CALLBACK TẠI ĐÂY === */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protected Routes */}
         <Route
