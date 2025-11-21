@@ -303,6 +303,15 @@ export default function AuthPage() {
                     )}
                   </div>
 
+                  <div className="flex items-center justify-end -mt-2">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                   </Button>

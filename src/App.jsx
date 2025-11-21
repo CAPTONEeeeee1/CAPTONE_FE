@@ -20,6 +20,8 @@ import EditBoardPage from './pages/EditBoard';
 import AcceptInvitationPage from './pages/AcceptInvitation';
 import VerifyOTPPage from './pages/VerifyOTP';
 import AuthCallback from './pages/AuthCallback'; 
+import ForgotPasswordPage from './pages/ForgotPassword'; 
+import ResetPasswordPage from './pages/ResetPasswordPage'; 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 
@@ -60,6 +62,10 @@ function App() {
           }
         />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
+
+        {/* THÊM ROUTE CHO QUÊN MẬT KHẨU VÀ ĐẶT LẠI MẬT KHẨU */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* === THÊM ROUTE CHO GOOGLE CALLBACK TẠI ĐÂY === */}
         <Route path="/auth/callback" element={<AuthCallback />} />

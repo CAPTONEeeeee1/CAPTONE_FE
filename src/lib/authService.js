@@ -156,6 +156,26 @@ const authService = {
     },
 
     /**
+     * Gửi yêu cầu đặt lại mật khẩu
+     * @param {string} email - Email của người dùng
+     * @returns {Promise}
+     */
+    async sendPasswordResetCode(email) {
+        const normalizedEmail = normalizeEmail(email);
+        return apiClient.post('/auth/send-reset-code', { email: normalizedEmail });
+    },
+
+    /**
+     * Đặt lại mật khẩu bằng mã OTP
+     * @param {Object} data - Dữ liệu đặt lại mật khẩu (email, code, newPassword, confirmPassword)
+     * @returns {Promise}
+     */
+    async resetPassword(data) {
+        const payload = { ...data, email: normalizeEmail(data.email) };
+        return apiClient.post('/auth/reset-password', payload);
+    },
+
+    /**
      * Logout user
      */
     logout() {
