@@ -1,22 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-
-// =======================================================
-// === MOCK/STANDALONE AUTH SERVICE CHO CHỨC NĂNG CALLBACK ===
-// === (Dùng để tránh lỗi import "../lib/authService") ===
-// =======================================================
-const MOCK_AUTH_SERVICE = {
-    saveTokens: (accessToken, refreshToken) => {
-        if (accessToken) {
-            localStorage.setItem('accessToken', accessToken);
-        }
-        if (refreshToken) {
-            localStorage.setItem('refreshToken', refreshToken);
-        }
-    },
-};
-// =======================================================
+import apiClient from '@/lib/api'; // *** SỬA LỖI: Import apiClient để gọi API ***
+import authService from '@/lib/authService'; // *** SỬA LỖI: Import authService thật ***
 
 
 export default function AuthCallback() {
@@ -24,7 +10,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     // 1. Lấy token và lỗi từ URL
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(window.location.search); 
     const accessToken = urlParams.get('accessToken');
     const refreshToken = urlParams.get('refreshToken');
     const error = urlParams.get('error');
@@ -36,20 +22,43 @@ export default function AuthCallback() {
       return;
     }
 
-    if (accessToken && refreshToken) {
-      // 2. LƯU token vào localStorage 
-      MOCK_AUTH_SERVICE.saveTokens(accessToken, refreshToken); 
-      
-      toast.success('Đăng nhập thành công với Google!');
-      
-      // 3. Chuyển hướng đến trang chính
-      navigate('/dashboard', { replace: true });
-    } else {
+    const handleGoogleLogin = async () => {
+      if (accessToken && refreshToken) {
+        try {
+          // 2. LƯU token vào localStorage
+          localStorage.setItem('token', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+
+          // 3. GỌI API /me ĐỂ LẤY VÀ LƯU THÔNG TIN USER
+          // *** SỬA LỖI: Bỏ tiền tố /api để khớp với cấu hình backend ***
+          const response = await apiClient.get('/auth/me');
+          const user = response.user || response.data?.user;
+
+          if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
+          } else {
+            throw new Error("Không thể lấy thông tin người dùng.");
+          }
+
+          toast.success('Đăng nhập thành công với Google!');
+          
+          // 4. Chuyển hướng đến trang chính
+          navigate('/dashboard', { replace: true });
+        } catch (err) {
+          toast.error(err.message || 'Lỗi xác thực sau khi đăng nhập Google.');
+          authService.logout(); // Dọn dẹp token nếu có lỗi
+          navigate('/auth', { replace: true });
+        }
+      } else {
       // Trường hợp không có token nào được tìm thấy 
       toast.error('Lỗi xác thực: Không tìm thấy mã thông báo.');
       navigate('/auth', { replace: true }); // Sửa lỗi: Chuyển hướng về /auth
-    }
+    }} // *** SỬA LỖI: Thêm dấu } để đóng hàm handleGoogleLogin ***
+
+    handleGoogleLogin();
+
   }, [navigate]);
+   // Phụ thuộc không thay đổi
 
   // Hiển thị một giao diện loading trong khi xử lý
   return (

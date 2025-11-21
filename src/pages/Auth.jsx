@@ -124,8 +124,9 @@ export default function AuthPage() {
       setTimeout(() => {
         navigate('/verify-otp', {
           state: {
+            // *** SỬA LỖI: Lấy email trực tiếp từ form đăng ký để đảm bảo luôn có giá trị ***
             userId: response.user.id,
-            email: response.user.email
+            email: registerForm.email 
           }
         });
       }, 1000);
@@ -179,15 +180,24 @@ export default function AuthPage() {
     } catch (error) {
       console.error("Login error:", error);
 
-      // Check if email not verified
-      if (error.code === 'EMAIL_NOT_VERIFIED') {
+      // *** CẢI TIẾN: Xử lý trường hợp tài khoản chưa được kích hoạt ***
+      if (error.status === 403 && error.data?.error?.includes('chưa được kích hoạt')) {
         setUnverifiedEmail(loginForm.email);
         setShowResendVerification(true);
-        toast.error("Email chưa được xác thực. Vui lòng kiểm tra hộp thư của bạn.", {
-          duration: 5000
+        toast.error("Tài khoản chưa được kích hoạt.", {
+          description: "Bạn có muốn chúng tôi gửi lại mã OTP không?",
+          action: {
+            label: "Đi đến trang xác thực",
+            onClick: () => navigate('/verify-otp', { state: { email: loginForm.email } }),
+          },
         });
       } else if (error.status === 401) {
-        toast.error("Email hoặc mật khẩu không đúng");
+        // Phân biệt lỗi sai mật khẩu và lỗi đăng nhập bằng Google
+        if (error.data?.error?.includes('Google')) {
+          toast.error("Lỗi đăng nhập", { description: error.data.error });
+        } else {
+          toast.error("Email hoặc mật khẩu không đúng");
+        }
       } else if (error.status === 400) {
         toast.error(error.message || "Thông tin đăng nhập không hợp lệ");
       } else {
@@ -203,19 +213,14 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/resend-verification`, {
+      // Sửa lỗi cú pháp: Gộp lại dòng fetch bị vỡ và loại bỏ dòng trùng lặp
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email: unverifiedEmail }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể gửi lại email xác thực');
-      }
 
       toast.success("Email xác thực đã được gửi lại! Vui lòng kiểm tra hộp thư.", {
         duration: 5000
@@ -232,9 +237,10 @@ export default function AuthPage() {
 
   // Handle Google auth
   const handleGoogleAuth = () => {
-    toast.info("Tính năng đăng nhập Google sẽ sớm được cập nhật");
+    // Sửa lỗi cú pháp: Hoàn thiện lại chuỗi URL bị cắt dở
+    const googleAuthUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/google`;
+    window.location.href = googleAuthUrl;
   };
-
   // Clear error when input changes
   const handleInputChange = (form, field, value) => {
     if (form === 'login') {

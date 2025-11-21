@@ -1,5 +1,18 @@
 import apiClient from './api';
 
+// *** SỬA LỖI: Thêm hàm normalizeEmail để nhất quán với backend ***
+function normalizeEmail(email) {
+    if (!email) return email;
+
+    const parts = email.split('@');
+    if (parts.length !== 2 || parts[1].toLowerCase() !== 'gmail.com') {
+        return email;
+    }
+
+    const localPart = parts[0].replace(/\./g, '');
+    return `${localPart}@${parts[1]}`;
+}
+
 /**
  * Authentication Service
  * Handles all authentication related API calls
@@ -11,7 +24,7 @@ const authService = {
      * @returns {Promise} Response with token and user data
      */
     async register(userData) {
-        const response = await apiClient.post('/api/auth/register', {
+        const response = await apiClient.post('/auth/register', {
             email: userData.email.trim().toLowerCase(),
             password: userData.password,
             fullName: userData.fullName.trim(),
@@ -49,7 +62,7 @@ const authService = {
      * @returns {Promise} Response with token and user data
      */
     async login(credentials) {
-        const response = await apiClient.post('/api/auth/login', {
+        const response = await apiClient.post('/auth/login', {
             email: credentials.email.trim().toLowerCase(),
             password: credentials.password
         });
@@ -90,7 +103,7 @@ const authService = {
         }
 
         try {
-            const response = await apiClient.post('/api/auth/refresh', {
+            const response = await apiClient.post('/auth/refresh', {
                 refreshToken
             });
 
@@ -124,6 +137,22 @@ const authService = {
 
             throw error;
         }
+    },
+
+    /**
+     * Verify OTP
+     * @param {string} otp - The One-Time Password
+     * @param {string} email - The user's email
+     * @returns {Promise}
+     */
+    async verifyOtp(otp, email) {
+        // Chuẩn hóa email trước khi gửi request
+        const normalizedEmail = normalizeEmail(email);
+
+        return apiClient.post('/auth/verify-otp', {
+            otp,
+            email: normalizedEmail,
+        });
     },
 
     /**

@@ -10,7 +10,7 @@ const userService = {
      * @returns {Promise<Object>} User profile data
      */
     async getProfile() {
-        return await apiClient.get('/api/auth/me');
+        return await apiClient.get('/auth/me');
     },
 
     /**
@@ -41,7 +41,7 @@ const userService = {
             data.description = profileData.description ? profileData.description.trim() : null;
         }
 
-        return await apiClient.patch('/api/auth/me', data);
+        return await apiClient.patch('/auth/me', data);
     },
 
     /**
@@ -53,7 +53,7 @@ const userService = {
      * @returns {Promise<Object>} Success message
      */
     async changePassword(passwordData) {
-        return await apiClient.post('/api/auth/change-password', {
+        return await apiClient.post('/auth/change-password', {
             currentPassword: passwordData.currentPassword,
             newPassword: passwordData.newPassword,
             confirmPassword: passwordData.confirmPassword

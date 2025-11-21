@@ -11,7 +11,7 @@ const commentService = {
      * @returns {Promise<Object>} Comments list with author info
      */
     async getByCardId(cardId) {
-        return await apiClient.get(`/api/comments/${cardId}`);
+        return await apiClient.get(`/comments/${cardId}`);
     },
 
     /**
@@ -23,7 +23,7 @@ const commentService = {
      * @returns {Promise<Object>} Created comment with author info
      */
     async create(cardId, commentData) {
-        return await apiClient.post(`/api/comments/${cardId}`, commentData);
+        return await apiClient.post(`/comments/${cardId}`, commentData);
     },
 
     /**
@@ -34,7 +34,7 @@ const commentService = {
      * @returns {Promise<Object>} Updated comment
      */
     async update(commentId, updates) {
-        return await apiClient.patch(`/api/comments/${commentId}`, updates);
+        return await apiClient.patch(`/comments/${commentId}`, updates);
     },
 
     /**
@@ -43,7 +43,7 @@ const commentService = {
      * @returns {Promise<Object>} Delete confirmation
      */
     async delete(commentId) {
-        return await apiClient.delete(`/api/comments/${commentId}`);
+        return await apiClient.delete(`/comments/${commentId}`);
     },
 };
 

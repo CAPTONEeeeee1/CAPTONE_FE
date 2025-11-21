@@ -15,7 +15,7 @@ const boardService = {
      * @returns {Promise<Object>} Created board with lists
      */
     async create(boardData) {
-        return await apiClient.post('/api/boards', boardData);
+        return await apiClient.post('/boards', boardData);
     },
 
     /**
@@ -24,7 +24,7 @@ const boardService = {
      * @returns {Promise<Object>} Board details
      */
     async getById(boardId) {
-        return await apiClient.get(`/api/boards/${boardId}`);
+        return await apiClient.get(`/boards/${boardId}`);
     },
 
     /**
@@ -34,7 +34,7 @@ const boardService = {
      * @returns {Promise<Object>} Updated board
      */
     async rename(boardId, name) {
-        return await apiClient.put(`/api/boards/${boardId}/rename`, { name });
+        return await apiClient.put(`/boards/${boardId}/rename`, { name });
     },
 
     /**
@@ -43,7 +43,7 @@ const boardService = {
      * @returns {Promise<Object>} Delete confirmation
      */
     async delete(boardId) {
-        return await apiClient.delete(`/api/boards/${boardId}`);
+        return await apiClient.delete(`/boards/${boardId}`);
     },
 };
 

@@ -21,7 +21,7 @@ const notificationService = {
             unreadOnly: unreadOnly.toString()
         });
 
-        return await apiClient.get(`/api/notifications?${queryParams}`);
+        return await apiClient.get(`/notifications?${queryParams}`);
     },
 
     /**
@@ -30,7 +30,7 @@ const notificationService = {
      * @returns {Promise<Object>} Updated notification
      */
     async markAsRead(notificationId) {
-        return await apiClient.put(`/api/notifications/${notificationId}/read`);
+        return await apiClient.put(`/notifications/${notificationId}/read`);
     },
 
     /**
@@ -38,7 +38,7 @@ const notificationService = {
      * @returns {Promise<Object>} Success message
      */
     async markAllAsRead() {
-        return await apiClient.put('/api/notifications/read-all');
+        return await apiClient.put('/notifications/read-all');
     },
 
     /**
@@ -47,7 +47,7 @@ const notificationService = {
      * @returns {Promise<Object>} Success message
      */
     async deleteNotification(notificationId) {
-        return await apiClient.delete(`/api/notifications/${notificationId}`);
+        return await apiClient.delete(`/notifications/${notificationId}`);
     },
 
     /**
@@ -55,7 +55,7 @@ const notificationService = {
      * @returns {Promise<Object>} Unread count
      */
     async getUnreadCount() {
-        return await apiClient.get('/api/notifications/unread-count');
+        return await apiClient.get('/notifications/unread-count');
     },
 
     /**
@@ -63,7 +63,7 @@ const notificationService = {
      * @returns {Promise<Object>} Notification settings
      */
     async getSettings() {
-        return await apiClient.get('/api/notifications/settings');
+        return await apiClient.get('/notifications/settings');
     },
 
     /**
@@ -76,7 +76,7 @@ const notificationService = {
      * @returns {Promise<Object>} Updated settings
      */
     async updateSettings(settings) {
-        return await apiClient.put('/api/notifications/settings', settings);
+        return await apiClient.put('/notifications/settings', settings);
     }
 };
 

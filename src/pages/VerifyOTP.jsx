@@ -86,9 +86,10 @@ export default function VerifyOTP() {
         setIsVerifying(true);
 
         try {
-            const response = await api.post('/api/auth/verify-otp', {
-                userId,
-                otp: otpCode
+            // SỬA LỖI: Loại bỏ tiền tố /api để khớp với cấu hình backend
+            const response = await api.post('/auth/verify-otp', {
+                email: email, // Gửi email thay vì userId để nhất quán với backend
+                otp: otpCode,
             });
 
             toast.success('Xác thực thành công! Đang chuyển đến trang đăng nhập...', {
@@ -115,7 +116,8 @@ export default function VerifyOTP() {
         setIsResending(true);
 
         try {
-            await api.post('/api/auth/resend-verification', { email });
+            // SỬA LỖI: Loại bỏ tiền tố /api
+            await api.post('/auth/resend-verification', { email });
             toast.success('Mã OTP mới đã được gửi đến email của bạn!', {
                 duration: 4000
             });

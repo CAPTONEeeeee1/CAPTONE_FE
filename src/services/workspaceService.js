@@ -1,147 +1,115 @@
 import apiClient from '@/lib/api';
 
-/**
- * Workspace Service
- * Handles all workspace-related API calls
- */
 const workspaceService = {
     /**
-     * Create a new workspace
-     * @param {Object} workspaceData - Workspace information
-     * @param {string} workspaceData.name - Workspace name (required)
-     * @param {string} workspaceData.description - Workspace description (optional)
-     * @returns {Promise<Object>} Created workspace
-     */
-    async create(workspaceData) {
-        return await apiClient.post('/api/workspaces', {
-            name: workspaceData.name,
-            description: workspaceData.description || '',
-        });
-    },
-
-    /**
-     * Get all workspaces for current user
-     * @returns {Promise<Array>} List of workspaces
+     * Lấy tất cả workspaces của người dùng hiện tại
+     * @returns {Promise<Object>} Đối tượng chứa mảng workspaces
      */
     async getAll() {
-        return await apiClient.get('/api/workspaces');
+        // SỬA LỖI: Trả về toàn bộ đối tượng response để component có thể truy cập response.workspaces
+        return apiClient.get('/workspaces');
     },
 
     /**
-     * Get workspace by ID
-     * @param {string} workspaceId - Workspace ID
-     * @returns {Promise<Object>} Workspace details
+     * Lấy thông tin chi tiết của một workspace
+     * @param {string} id - ID của workspace
+     * @returns {Promise<Object>} Đối tượng chứa thông tin workspace
      */
-    async getById(workspaceId) {
-        return await apiClient.get(`/api/boards/workspace/${workspaceId}`);
+    async getById(id) {
+        return apiClient.get(`/workspaces/${id}`);
     },
 
     /**
-     * Update workspace
-     * @param {string} workspaceId - Workspace ID
-     * @param {Object} updateData - Data to update
-     * @returns {Promise<Object>} Updated workspace
+     * Tạo một workspace mới
+     * @param {Object} workspaceData - Dữ liệu của workspace mới (name, description)
+     * @returns {Promise<Object>} Workspace vừa được tạo
      */
-    async update(workspaceId, updateData) {
-        return await apiClient.put(`/api/workspaces/${workspaceId}`, updateData);
+    async create(workspaceData) {
+        return apiClient.post('/workspaces', workspaceData);
     },
 
     /**
-     * Delete workspace
-     * @param {string} workspaceId - Workspace ID
-     * @returns {Promise<Object>} Delete confirmation
-     */
-    async delete(workspaceId) {
-        return await apiClient.delete(`/api/workspaces/${workspaceId}`);
-    },
-
-    /**
-     * Get boards for a specific workspace
-     * @param {string} workspaceId - Workspace ID
-     * @returns {Promise<Object>} Boards data with list of boards
+     * Lấy danh sách boards của một workspace
+     * @param {string} workspaceId - ID của workspace
+     * @returns {Promise<Object>} Đối tượng chứa mảng boards
      */
     async getBoards(workspaceId) {
-        return await apiClient.get(`/api/boards/workspace/${workspaceId}`);
+        return apiClient.get(`/workspaces/${workspaceId}/boards`);
     },
 
     /**
-     * Invite a member to workspace
-     * @param {string} workspaceId - Workspace ID
-     * @param {Object} inviteData - Invitation data
-     * @param {string} inviteData.email - Email of user to invite (required)
-     * @param {string} inviteData.role - Role to assign (optional, default: 'member')
-     * @returns {Promise<Object>} Created invitation data
-     */
-    async inviteMember(workspaceId, inviteData) {
-        return await apiClient.post(`/api/workspaces/${workspaceId}/invite`, {
-            email: inviteData.email,
-            role: inviteData.role || 'member',
-        });
-    },
-
-    /**
-     * Get all members of a workspace
-     * @param {string} workspaceId - Workspace ID
-     * @returns {Promise<Array>} List of workspace members with user details
+     * Lấy danh sách thành viên của một workspace
+     * @param {string} workspaceId - ID của workspace
+     * @returns {Promise<Object>} Đối tượng chứa mảng members
      */
     async getMembers(workspaceId) {
-        return await apiClient.get(`/api/workspaces/${workspaceId}/members`);
+        return apiClient.get(`/workspaces/${workspaceId}/members`);
     },
 
     /**
-     * Remove a member from workspace
-     * @param {string} workspaceId - Workspace ID
-     * @param {string} userId - User ID to remove
-     * @returns {Promise<Object>} Success message
+     * Mời thành viên mới vào workspace
+     * @param {string} workspaceId - ID của workspace
+     * @param {Object} invitationData - Dữ liệu lời mời (email, role)
+     * @returns {Promise<Object>}
      */
-    async removeMember(workspaceId, userId) {
-        return await apiClient.delete(`/api/workspaces/${workspaceId}/member/${userId}`);
+    async inviteMember(workspaceId, invitationData) {
+        return apiClient.post(`/workspaces/${workspaceId}/invitations`, invitationData);
     },
 
     /**
-     * Update member role in workspace
-     * @param {string} workspaceId - Workspace ID
-     * @param {string} userId - User ID to update
-     * @param {string} role - New role (admin, member, guest)
-     * @returns {Promise<Object>} Updated member
+     * Xóa thành viên khỏi workspace
+     * @param {string} workspaceId - ID của workspace
+     * @param {string} memberId - ID của thành viên cần xóa
+     * @returns {Promise<Object>}
      */
-    async updateMemberRole(workspaceId, userId, role) {
-        return await apiClient.patch(`/api/workspaces/${workspaceId}/member/${userId}/role`, { role });
+    async removeMember(workspaceId, memberId) {
+        return apiClient.delete(`/workspaces/${workspaceId}/members/${memberId}`);
     },
 
     /**
-     * Leave a workspace (for non-owner members)
-     * @param {string} workspaceId - Workspace ID
-     * @returns {Promise<Object>} Success message
+     * Cập nhật vai trò của thành viên
+     * @param {string} workspaceId - ID của workspace
+     * @param {string} memberId - ID của thành viên
+     * @param {string} role - Vai trò mới ('admin' hoặc 'member')
+     * @returns {Promise<Object>}
      */
-    async leaveWorkspace(workspaceId) {
-        return await apiClient.post(`/api/workspaces/${workspaceId}/leave`);
+    async updateMemberRole(workspaceId, memberId, role) {
+        return apiClient.patch(`/workspaces/${workspaceId}/members/${memberId}`, { role });
     },
 
     /**
-     * Get all pending invitations for current user
-     * @returns {Promise<Array>} List of pending invitations
+     * Lấy danh sách lời mời của người dùng hiện tại
+     * @returns {Promise<Object>}
      */
     async getMyInvitations() {
-        return await apiClient.get('/api/workspaces/invitations');
+        return apiClient.get('/workspaces/invitations/me');
     },
 
     /**
-     * Accept a workspace invitation
-     * @param {string} invitationId - Invitation ID
-     * @returns {Promise<Object>} Success message
+     * Chấp nhận lời mời tham gia workspace
+     * @param {string} invitationId - ID của lời mời
+     * @returns {Promise<Object>}
      */
     async acceptInvitation(invitationId) {
-        return await apiClient.post(`/api/workspaces/invitations/${invitationId}/accept`);
+        return apiClient.post(`/workspaces/invitations/${invitationId}/accept`);
     },
 
     /**
-     * Reject a workspace invitation
-     * @param {string} invitationId - Invitation ID
-     * @returns {Promise<Object>} Success message
+     * Từ chối lời mời tham gia workspace
+     * @param {string} invitationId - ID của lời mời
+     * @returns {Promise<Object>}
      */
     async rejectInvitation(invitationId) {
-        return await apiClient.post(`/api/workspaces/invitations/${invitationId}/reject`);
+        return apiClient.post(`/workspaces/invitations/${invitationId}/reject`);
+    },
+
+    /**
+     * Rời khỏi một workspace
+     * @param {string} workspaceId - ID của workspace
+     * @returns {Promise<Object>}
+     */
+    async leaveWorkspace(workspaceId) {
+        return apiClient.post(`/workspaces/${workspaceId}/leave`);
     },
 };
 

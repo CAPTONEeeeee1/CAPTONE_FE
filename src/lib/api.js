@@ -27,7 +27,8 @@ const apiClient = {
      * @returns {Promise} Response data
      */
     async request(endpoint, options = {}, isRetry = false) {
-        const url = `${API_BASE_URL}${endpoint}`;
+        // SỬA LỖI: Loại bỏ việc tự động thêm tiền tố /api
+        const url = `${API_BASE_URL}${endpoint}`; 
 
         const defaultHeaders = {
             'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ const apiClient = {
 
             if (!response.ok) {
                 // Handle 401 Unauthorized
-                if (response.status === 401 && !isRetry && endpoint !== '/api/auth/refresh') {
+                if (response.status === 401 && !isRetry && endpoint !== '/auth/refresh') {
                     if (isRefreshing) {
                         // Wait for the token to be refreshed
                         return new Promise((resolve, reject) => {
@@ -69,7 +70,8 @@ const apiClient = {
                         }
 
                         // Refresh token
-                        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+                        // SỬA LỖI: Loại bỏ tiền tố /api khỏi lệnh gọi refresh token
+                        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ refreshToken })

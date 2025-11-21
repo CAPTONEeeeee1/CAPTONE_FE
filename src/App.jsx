@@ -19,14 +19,27 @@ import CreateBoardPage from './pages/CreateBoard';
 import EditBoardPage from './pages/EditBoard';
 import AcceptInvitationPage from './pages/AcceptInvitation';
 import VerifyOTPPage from './pages/VerifyOTP';
-import AuthCallback from './pages/AuthCallback'; // *** THÊM IMPORT NÀY ***
+import AuthCallback from './pages/AuthCallback'; 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
+
+// ===== ADMIN PAGES =====
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminBoardsPage from "./pages/admin/AdminBoardsPage";
+import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 function App() {
   return (
     <>
       <Routes>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="boards" element={<AdminBoardsPage />} />
+          <Route path="payments" element={<AdminPaymentsPage />} />
+        </Route>
         {/* Public Routes */}
         <Route
           path="/"

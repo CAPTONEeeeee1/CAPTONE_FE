@@ -19,7 +19,7 @@ const cardService = {
      * @returns {Promise<Object>} Created card
      */
     async create(cardData) {
-        return await apiClient.post('/api/cards', cardData);
+        return await apiClient.post('/cards', cardData);
     },
 
     /**
@@ -28,7 +28,7 @@ const cardService = {
      * @returns {Promise<Object>} Card details
      */
     async getById(cardId) {
-        return await apiClient.get(`/api/cards/${cardId}`);
+        return await apiClient.get(`/cards/${cardId}`);
     },
 
     /**
@@ -38,7 +38,7 @@ const cardService = {
      * @returns {Promise<Object>} Updated card
      */
     async update(cardId, updates) {
-        return await apiClient.patch(`/api/cards/${cardId}`, updates);
+        return await apiClient.patch(`/cards/${cardId}`, updates);
     },
 
     /**
@@ -47,7 +47,7 @@ const cardService = {
      * @returns {Promise<Object>} Delete confirmation
      */
     async delete(cardId) {
-        return await apiClient.delete(`/api/cards/${cardId}`);
+        return await apiClient.delete(`/cards/${cardId}`);
     },
 
     /**
@@ -58,7 +58,7 @@ const cardService = {
      * @returns {Promise<Object>} Updated card
      */
     async move(cardId, toListId, toIndex) {
-        return await apiClient.post(`/api/cards/${cardId}/move`, { toListId, toIndex });
+        return await apiClient.post(`/cards/${cardId}/move`, { toListId, toIndex });
     },
 
     /**
@@ -81,7 +81,7 @@ const cardService = {
         if (params.limit !== undefined) queryParams.append('limit', params.limit);
 
         const queryString = queryParams.toString();
-        const url = `/api/cards/list/${listId}${queryString ? `?${queryString}` : ''}`;
+        const url = `/cards/list/${listId}${queryString ? `?${queryString}` : ''}`;
         return await apiClient.get(url);
     },
 
@@ -92,7 +92,7 @@ const cardService = {
      * @returns {Promise<Object>} Assignment confirmation
      */
     async assignMember(cardId, userId) {
-        return await apiClient.post(`/api/cards/${cardId}/assign`, { userId });
+        return await apiClient.post(`/cards/${cardId}/assign`, { userId });
     },
 
     /**
@@ -102,7 +102,7 @@ const cardService = {
      * @returns {Promise<Object>} Remove confirmation
      */
     async removeMember(cardId, userId) {
-        return await apiClient.delete(`/api/cards/${cardId}/member/${userId}`);
+        return await apiClient.delete(`/cards/${cardId}/member/${userId}`);
     },
 
     /**
@@ -111,7 +111,7 @@ const cardService = {
      * @returns {Promise<Object>} Attachments list
      */
     async getAttachments(cardId) {
-        return await apiClient.get(`/api/cards/${cardId}/attachments`);
+        return await apiClient.get(`/cards/${cardId}/attachments`);
     },
 
     /**
@@ -121,7 +121,7 @@ const cardService = {
      * @returns {Promise<Object>} Delete confirmation
      */
     async deleteAttachment(cardId, attachmentId) {
-        return await apiClient.delete(`/api/cards/${cardId}/attachments/${attachmentId}`);
+        return await apiClient.delete(`/cards/${cardId}/attachments/${attachmentId}`);
     },
 };
 
