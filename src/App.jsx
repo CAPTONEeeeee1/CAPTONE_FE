@@ -1,6 +1,7 @@
-import './App.css'
-import { Routes, Route } from "react-router-dom";
+import './App.css';
 import React from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
+
 import HomePage from './pages/Home';
 import AboutPage from './pages/About';
 import ContactPage from './pages/Contact';
@@ -21,140 +22,40 @@ import AcceptInvitationPage from './pages/AcceptInvitation';
 import VerifyOTPPage from './pages/VerifyOTP';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
+import Checkout from './pages/Checkout';
 
-function App() {
+export default function App() {
   return (
     <>
+      <nav>
+        <Link to="/">Home</Link> | <Link to="/checkout">Nâng cấp Premium</Link>
+      </nav>
+
       <Routes>
         {/* Public Routes */}
-        <Route
-          path="/"
-          element={
-            <PublicRoute>
-              <HomePage />
-            </PublicRoute>
-          }
-        />
+        <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route
-          path="/auth"
-          element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          }
-        />
+        <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
 
         {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces"
-          element={
-            <ProtectedRoute>
-              <WorkspacesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces/create"
-          element={
-            <ProtectedRoute>
-              <CreateWorkspacePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces/:id"
-          element={
-            <ProtectedRoute>
-              <WorkspacePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces/:id/boards/new"
-          element={
-            <ProtectedRoute>
-              <CreateBoardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces/:id/boards/:boardId/edit"
-          element={
-            <ProtectedRoute>
-              <EditBoardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workspaces/:id/boards/:boardId"
-          element={
-            <ProtectedRoute>
-              <BoardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute>
-              <ReportsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports/:workspaceId"
-          element={
-            <ProtectedRoute>
-              <ReportDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <NotificationsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/invitations/:invitationId"
-          element={
-            <ProtectedRoute>
-              <AcceptInvitationPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/workspaces" element={<ProtectedRoute><WorkspacesPage /></ProtectedRoute>} />
+        <Route path="/workspaces/create" element={<ProtectedRoute><CreateWorkspacePage /></ProtectedRoute>} />
+        <Route path="/workspaces/:id" element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />
+        <Route path="/workspaces/:id/boards/new" element={<ProtectedRoute><CreateBoardPage /></ProtectedRoute>} />
+        <Route path="/workspaces/:id/boards/:boardId/edit" element={<ProtectedRoute><EditBoardPage /></ProtectedRoute>} />
+        <Route path="/workspaces/:id/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+        <Route path="/reports/:workspaceId" element={<ProtectedRoute><ReportDetailPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/invitations/:invitationId" element={<ProtectedRoute><AcceptInvitationPage /></ProtectedRoute>} />
+        
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
     </>
-  )
+  );
 }
-
-export default App
