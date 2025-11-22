@@ -1,0 +1,37 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+}
+.row {
+    display: flex;
+    gap: 8px;
+}
+.form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+.form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+.payButton {
+    background: linear-gradient(90deg,#0066ff,#00a3ff);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.error { color: #b00020; }
+.success { color: #0a7f3f; padding: 12px; border: 1px solid #cfeadf; border-radius: 6px; }
+.summary {
+    border: 1px solid #eee;
+    padding: 12px;
+    border-radius: 8px;
+    max-width: 320px;
+}
+.price { font-weight: 700; margin: 8px 0; }
