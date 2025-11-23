@@ -29,7 +29,6 @@ import { PublicRoute } from './components/PublicRoute';
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
-import AdminBoardsPage from "./pages/admin/AdminBoardsPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 function App() {
@@ -39,7 +38,6 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="boards" element={<AdminBoardsPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
         </Route>
         {/* Public Routes */}

@@ -18,215 +18,136 @@ export default function AuthPage() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
-  // Login form state
-  const [loginForm, setLoginForm] = useState({
-    email: "",
-    password: ""
-  });
-
-  // Register form state
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
     fullName: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
 
-  // Validate email format
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidPhone = (phone) => /^[0-9]{10,11}$/.test(phone.replace(/\s/g, ""));
 
-  // Validate phone number (basic validation)
-  const isValidPhone = (phone) => /^[0-9]{10,11}$/.test(phone.replace(/\s/g, ''));
-
-  // Validate registration form
   const validateRegisterForm = () => {
     const newErrors = {};
-
-    // Password strength regex
     const hasUpperCase = /[A-Z]/;
     const hasNumber = /[0-9]/;
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
 
-    if (!registerForm.fullName.trim()) {
-      newErrors.fullName = "Vui lòng nhập họ và tên";
-    }
+    if (!registerForm.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
+    if (!registerForm.email.trim()) newErrors.email = "Vui lòng nhập email";
+    else if (!isValidEmail(registerForm.email)) newErrors.email = "Email không hợp lệ";
 
-    if (!registerForm.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!isValidEmail(registerForm.email)) {
-      newErrors.email = "Email không hợp lệ";
-    }
+    if (!registerForm.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
+    else if (!isValidPhone(registerForm.phone)) newErrors.phone = "Số điện thoại phải có 10-11 chữ số";
 
-    if (!registerForm.phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại";
-    } else if (!isValidPhone(registerForm.phone)) {
-      newErrors.phone = "Số điện thoại phải có 10-11 chữ số";
-    }
-
-    if (!registerForm.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (registerForm.password.length < 12) {
-      newErrors.password = "Mật khẩu phải có ít nhất 12 ký tự";
-    } else if (!hasUpperCase.test(registerForm.password)) {
-      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ hoa";
-    } else if (!hasNumber.test(registerForm.password)) {
-      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số";
-    } else if (!hasSpecialChar.test(registerForm.password)) {
+    if (!registerForm.password) newErrors.password = "Vui lòng nhập mật khẩu";
+    else if (registerForm.password.length < 12) newErrors.password = "Mật khẩu phải có ít nhất 12 ký tự";
+    else if (!hasUpperCase.test(registerForm.password)) newErrors.password = "Mật khẩu phải có ít nhất 1 chữ hoa";
+    else if (!hasNumber.test(registerForm.password)) newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số";
+    else if (!hasSpecialChar.test(registerForm.password))
       newErrors.password = "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
-    }
 
-    if (!registerForm.confirmPassword) {
-      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
-    } else if (registerForm.password !== registerForm.confirmPassword) {
+    if (!registerForm.confirmPassword) newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
+    else if (registerForm.password !== registerForm.confirmPassword)
       newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Validate login form
   const validateLoginForm = () => {
     const newErrors = {};
-
-    if (!loginForm.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!isValidEmail(loginForm.email)) {
-      newErrors.email = "Email không hợp lệ";
-    }
-
-    if (!loginForm.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
-    }
-
+    if (!loginForm.email.trim()) newErrors.email = "Vui lòng nhập email";
+    else if (!isValidEmail(loginForm.email)) newErrors.email = "Email không hợp lệ";
+    if (!loginForm.password) newErrors.password = "Vui lòng nhập mật khẩu";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle registration
   const handleRegister = async (e) => {
     e.preventDefault();
-
     if (!validateRegisterForm()) return;
-
     setIsLoading(true);
     setErrors({});
-
     try {
       const response = await authService.register(registerForm);
-
-      toast.success("Đăng ký thành công! Mã OTP đã được gửi đến email của bạn.", {
-        duration: 4000
-      });
-
-      // Redirect to OTP verification page
+      toast.success("Đăng ký thành công! Mã OTP đã được gửi đến email của bạn.", { duration: 4000 });
       setTimeout(() => {
-        navigate('/verify-otp', {
-          state: {
-            // *** SỬA LỖI: Lấy email trực tiếp từ form đăng ký để đảm bảo luôn có giá trị ***
-            userId: response.user.id,
-            email: registerForm.email 
-          }
+        navigate("/verify-otp", {
+          state: { userId: response.user.id, email: registerForm.email },
         });
       }, 1000);
-
     } catch (error) {
       console.error("Registration error:", error);
-
       if (error.status === 409) {
         const errorMsg = error.data?.error || error.message;
         toast.error(errorMsg);
-
-        if (errorMsg.includes('Email')) {
-          setErrors({ email: "Email đã tồn tại" });
-        } else if (errorMsg.includes('Phone')) {
-          setErrors({ phone: "Số điện thoại đã được sử dụng" });
-        }
-      } else if (error.status === 400) {
-        toast.error(error.message || "Thông tin đăng ký không hợp lệ");
-      } else {
-        toast.error(error.message || "Đăng ký thất bại. Vui lòng thử lại.");
-      }
+        if (errorMsg.includes("Email")) setErrors({ email: "Email đã tồn tại" });
+        else if (errorMsg.includes("Phone")) setErrors({ phone: "Số điện thoại đã được sử dụng" });
+      } else toast.error(error.message || "Đăng ký thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle login
+  // ✅ Sửa toàn bộ logic đăng nhập: phân biệt role
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!validateLoginForm()) return;
-
     setIsLoading(true);
     setErrors({});
     setShowResendVerification(false);
 
     try {
-      await authService.login(loginForm);
+      const response = await authService.login(loginForm);
+      const data = response?.data || response;
+      const token = data?.accessToken || data?.token;
+      const user = data?.user || data?.data?.user;
 
+      if (token) localStorage.setItem("token", token);
       toast.success("Đăng nhập thành công!");
 
-      setLoginForm({
-        email: "",
-        password: ""
-      });
-
-      setTimeout(() => {
+      if (user?.role === "ADMIN") {
+        navigate("/admin");
+      } else {
         navigate("/dashboard");
-      }, 1000);
+      }
 
+      setLoginForm({ email: "", password: "" });
     } catch (error) {
       console.error("Login error:", error);
-
-      // *** CẢI TIẾN: Xử lý trường hợp tài khoản chưa được kích hoạt ***
-      if (error.status === 403 && error.data?.error?.includes('chưa được kích hoạt')) {
+      if (error.status === 403 && error.data?.error?.includes("chưa được kích hoạt")) {
         setUnverifiedEmail(loginForm.email);
         setShowResendVerification(true);
         toast.error("Tài khoản chưa được kích hoạt.", {
           description: "Bạn có muốn chúng tôi gửi lại mã OTP không?",
           action: {
             label: "Đi đến trang xác thực",
-            onClick: () => navigate('/verify-otp', { state: { email: loginForm.email } }),
+            onClick: () => navigate("/verify-otp", { state: { email: loginForm.email } }),
           },
         });
       } else if (error.status === 401) {
-        // Phân biệt lỗi sai mật khẩu và lỗi đăng nhập bằng Google
-        if (error.data?.error?.includes('Google')) {
-          toast.error("Lỗi đăng nhập", { description: error.data.error });
-        } else {
-          toast.error("Email hoặc mật khẩu không đúng");
-        }
-      } else if (error.status === 400) {
-        toast.error(error.message || "Thông tin đăng nhập không hợp lệ");
-      } else {
-        toast.error(error.message || "Đăng nhập thất bại. Vui lòng thử lại.");
-      }
+        if (error.data?.error?.includes("Google")) toast.error("Lỗi đăng nhập", { description: error.data.error });
+        else toast.error("Email hoặc mật khẩu không đúng");
+      } else toast.error(error.message || "Đăng nhập thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle resend verification email
   const handleResendVerification = async () => {
     setIsLoading(true);
-
     try {
-      // Sửa lỗi cú pháp: Gộp lại dòng fetch bị vỡ và loại bỏ dòng trùng lặp
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/resend-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/auth/resend-verification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: unverifiedEmail }),
       });
-
-      toast.success("Email xác thực đã được gửi lại! Vui lòng kiểm tra hộp thư.", {
-        duration: 5000
-      });
+      toast.success("Email xác thực đã được gửi lại! Vui lòng kiểm tra hộp thư.", { duration: 5000 });
       setShowResendVerification(false);
-
     } catch (error) {
       console.error("Resend verification error:", error);
       toast.error(error.message || "Không thể gửi lại email. Vui lòng thử lại sau.");
@@ -235,22 +156,15 @@ export default function AuthPage() {
     }
   };
 
-  // Handle Google auth
   const handleGoogleAuth = () => {
-    // Sửa lỗi cú pháp: Hoàn thiện lại chuỗi URL bị cắt dở
-    const googleAuthUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/google`;
+    const googleAuthUrl = `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/auth/google`;
     window.location.href = googleAuthUrl;
   };
-  // Clear error when input changes
+
   const handleInputChange = (form, field, value) => {
-    if (form === 'login') {
-      setLoginForm({ ...loginForm, [field]: value });
-    } else {
-      setRegisterForm({ ...registerForm, [field]: value });
-    }
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
-    }
+    if (form === "login") setLoginForm({ ...loginForm, [field]: value });
+    else setRegisterForm({ ...registerForm, [field]: value });
+    if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
   return (
