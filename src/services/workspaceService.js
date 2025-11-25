@@ -29,6 +29,15 @@ const workspaceService = {
     },
 
     /**
+     * Xóa một workspace
+     * @param {string} id - ID của workspace cần xóa
+     * @returns {Promise<Object>}
+     */
+    async delete(id) {
+        return apiClient.delete(`/workspaces/${id}`);
+    },
+
+    /**
      * Lấy danh sách boards của một workspace
      * @param {string} workspaceId - ID của workspace
      * @returns {Promise<Object>} Đối tượng chứa mảng boards
@@ -49,31 +58,30 @@ const workspaceService = {
     /**
      * Mời thành viên mới vào workspace
      * @param {string} workspaceId - ID của workspace
-     * @param {Object} invitationData - Dữ liệu lời mời (email, role)
+     * @param {Object} data - Chứa email và role
      * @returns {Promise<Object>}
      */
-    async inviteMember(workspaceId, invitationData) {
-        return apiClient.post(`/workspaces/${workspaceId}/invitations`, invitationData);
+    async inviteMember(workspaceId, { email, role }) {
+        return apiClient.post(`/workspaces/${workspaceId}/invitations`, { email, role });
     },
 
     /**
      * Xóa thành viên khỏi workspace
      * @param {string} workspaceId - ID của workspace
-     * @param {string} memberId - ID của thành viên cần xóa
+     * @param {Object} data - Chứa memberId
      * @returns {Promise<Object>}
      */
-    async removeMember(workspaceId, memberId) {
+    async removeMember(workspaceId, { memberId }) {
         return apiClient.delete(`/workspaces/${workspaceId}/members/${memberId}`);
     },
 
     /**
      * Cập nhật vai trò của thành viên
      * @param {string} workspaceId - ID của workspace
-     * @param {string} memberId - ID của thành viên
-     * @param {string} role - Vai trò mới ('admin' hoặc 'member')
+     * @param {Object} data - Chứa memberId và role
      * @returns {Promise<Object>}
      */
-    async updateMemberRole(workspaceId, memberId, role) {
+    async updateMemberRole(workspaceId, { memberId, role }) {
         return apiClient.patch(`/workspaces/${workspaceId}/members/${memberId}`, { role });
     },
 

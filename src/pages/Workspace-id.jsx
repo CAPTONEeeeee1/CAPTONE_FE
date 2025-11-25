@@ -60,6 +60,8 @@ export default function WorkspacePage() {
     const [isChangingRole, setIsChangingRole] = useState(false);
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
     const [isLeavingWorkspace, setIsLeavingWorkspace] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
 
     useEffect(() => {
         if (workspaceId) {
@@ -130,10 +132,7 @@ export default function WorkspacePage() {
 
         try {
             setIsInviting(true);
-            const response = await workspaceService.inviteMember(workspaceId, {
-                email: email.trim(),
-                role: selectedRole,
-            });
+            await workspaceService.inviteMember(workspaceId, { email: email.trim(), role: selectedRole }); // Giữ nguyên, đã đúng với chuẩn mới
 
             toast.success(`Đã gửi lời mời đến ${email}. Họ cần chấp nhận lời mời để tham gia workspace.`);
             setEmail("");
@@ -156,7 +155,7 @@ export default function WorkspacePage() {
         try {
             setIsRemovingMember(true);
             // Use user.id from nested user object
-            await workspaceService.removeMember(workspaceId, memberToRemove.user.id);
+            await workspaceService.removeMember(workspaceId, { memberId: memberToRemove.user.id });
 
             setMembers(members.filter(m => m.user.id !== memberToRemove.user.id));
 
@@ -176,7 +175,7 @@ export default function WorkspacePage() {
 
         try {
             setIsChangingRole(true);
-            await workspaceService.updateMemberRole(workspaceId, memberToChangeRole.user.id, newRole);
+            await workspaceService.updateMemberRole(workspaceId, { memberId: memberToChangeRole.user.id, role: newRole }); // Giữ nguyên, đã đúng với chuẩn mới
 
             setMembers(members.map(m =>
                 m.user.id === memberToChangeRole.user.id
@@ -215,6 +214,26 @@ export default function WorkspacePage() {
         } finally {
             setDeletingBoardId(null);
             setBoardToDelete(null);
+        }
+    };
+
+    const handleDeleteWorkspace = async () => {
+        try {
+            setIsDeletingWorkspace(true);
+            await workspaceService.delete(workspaceId);
+
+            toast.success(`Workspace "${workspace.name}" đã được xóa thành công.`);
+
+            // Chuyển hướng về trang danh sách workspaces sau khi xóa
+            setTimeout(() => {
+                navigate('/workspaces');
+            }, 1000);
+        } catch (error) {
+            console.error("Error deleting workspace:", error);
+            toast.error(error.data?.error || "Không thể xóa workspace.");
+        } finally {
+            setIsDeletingWorkspace(false);
+            setShowDeleteDialog(false);
         }
     };
 
@@ -329,8 +348,8 @@ export default function WorkspacePage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Settings Dropdown - Only show Leave option for non-owners */}
-                            {currentUserRole && currentUserRole !== 'owner' && (
+                            {/* Settings Dropdown - Dành cho Owner và các vai trò khác */}
+                            {currentUserRole && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" size="icon">
@@ -338,13 +357,23 @@ export default function WorkspacePage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                            className="text-destructive"
-                                            onClick={() => setShowLeaveDialog(true)}
-                                        >
-                                            <LogOut className="mr-2 h-4 w-4" />
-                                            Rời khỏi workspace
-                                        </DropdownMenuItem>
+                                        {currentUserRole === 'owner' ? (
+                                            <DropdownMenuItem
+                                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                                onClick={() => setShowDeleteDialog(true)}
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Xóa Workspace
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            <DropdownMenuItem
+                                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                                onClick={() => setShowLeaveDialog(true)}
+                                            >
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                Rời khỏi workspace
+                                            </DropdownMenuItem>
+                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             )}
@@ -796,6 +825,27 @@ export default function WorkspacePage() {
                             className="bg-destructive hover:bg-destructive/90"
                         >
                             {isLeavingWorkspace ? "Đang rời..." : "Rời khỏi workspace"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Delete Workspace Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Xóa vĩnh viễn workspace?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Bạn có chắc chắn muốn xóa vĩnh viễn workspace <span className="font-semibold text-foreground">"{workspace?.name}"</span>?
+                            <br /><br />
+                            Tất cả các board, danh sách công việc, và thành viên liên quan sẽ bị xóa.
+                            <span className="text-destructive font-semibold"> Hành động này không thể hoàn tác.</span>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeletingWorkspace}>Hủy</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteWorkspace} disabled={isDeletingWorkspace} className="bg-destructive hover:bg-destructive/90">
+                            {isDeletingWorkspace ? "Đang xóa..." : "Xóa vĩnh viễn"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

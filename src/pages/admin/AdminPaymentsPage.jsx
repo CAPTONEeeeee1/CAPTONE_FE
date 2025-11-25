@@ -46,7 +46,6 @@ export default function AdminPaymentsPage() {
         </table>
       </div>
 
-      {/* Khối hiển thị chi tiết phía dưới (click Xem mới hiện) */}
       {selectedPayment && (
         <div className="mt-4 p-4 bg-white shadow-md rounded-xl border">
           <h3 className="text-lg font-semibold mb-2">Chi tiết giao dịch</h3>
