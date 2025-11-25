@@ -177,7 +177,7 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                             <Button asChild>
-                                <Link to="/workspaces/new">
+                                <Link to="/workspaces/create">
                                     <Plus className="mr-2 h-4 w-4" />
                                     Tạo mới
                                 </Link>
