@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import cardService from "@/services/cardService";
 import commentService from "@/services/commentService";
 import workspaceService from "@/services/workspaceService";
+import apiClient from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -117,8 +118,8 @@ export function KanbanBoard({ board, onUpdate }) {
     if (!board?.id) return;
     setIsLoadingLabels(true);
     try {
-      const response = await api.get(`/labels?boardId=${board.id}`);
-      setBoardLabels(response.data.labels || []);
+      const response = await apiClient.get(`/labels?boardId=${board.id}`);
+      setBoardLabels(response.labels || []);
     } catch (error) {
       console.error("Error loading board labels:", error);
       setBoardLabels([]);

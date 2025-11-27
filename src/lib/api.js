@@ -76,6 +76,7 @@ const apiClient = {
             headers["Authorization"] = `Bearer ${newToken}`;
             return this.request(endpoint, { ...options, headers }, true);
           } catch (refreshError) {
+            console.error("Token refresh failed:", refreshError); // <-- Added this detailed log
             processQueue(refreshError, null);
             isRefreshing = false;
 
