@@ -82,7 +82,7 @@ const workspaceService = {
      * @returns {Promise<Object>}
      */
     async updateMemberRole(workspaceId, { memberId, role }) {
-        return apiClient.patch(`/workspaces/${workspaceId}/members/${memberId}`, { role });
+        return apiClient.patch(`/workspaces/${workspaceId}/members/${memberId}/role`, { role });
     },
 
     /**
