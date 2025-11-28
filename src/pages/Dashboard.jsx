@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import workspaceService from "@/services/workspaceService";
+import reportService from "@/services/reportService";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
@@ -26,28 +27,36 @@ import {
     Lock,
     Globe,
 } from "lucide-react";
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 export default function DashboardPage() {
     const [workspaces, setWorkspaces] = useState([]);
+    const [dashboardData, setDashboardData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetchWorkspaces();
-    }, []);
+        const fetchData = async () => {
+            try {
+                setIsLoading(true);
+                const [workspacesResponse, reportResponse] = await Promise.all([
+                    workspaceService.getAll(),
+                    reportService.getGlobalReport(),
+                ]);
+                setWorkspaces((workspacesResponse.workspaces || []).slice(0, 3));
+                setDashboardData(reportResponse);
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+                toast.error("Không thể tải dữ liệu dashboard");
+                setWorkspaces([]);
+                setDashboardData(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    const fetchWorkspaces = async () => {
-        try {
-            setIsLoading(true);
-            const response = await workspaceService.getAll();
-            setWorkspaces((response.workspaces || []).slice(0, 3));
-        } catch (error) {
-            console.error("Error fetching workspaces:", error);
-            toast.error("Không thể tải danh sách workspace");
-            setWorkspaces([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        fetchData();
+    }, []);
 
     const getWorkspaceColor = (id) => {
         const colors = [
@@ -64,29 +73,15 @@ export default function DashboardPage() {
         return colors[index];
     };
 
-    const recentActivities = [
-        {
-            user: "Nguyễn Văn B",
-            action: "đã hoàn thành task",
-            task: "Thiết kế giao diện trang chủ",
-            workspace: "Dự án Website",
-            time: "2 giờ trước",
-        },
-        {
-            user: "Trần Thị C",
-            action: "đã thêm",
-            task: "Viết content cho landing page",
-            workspace: "Marketing Campaign",
-            time: "5 giờ trước",
-        },
-        {
-            user: "Lê Văn D",
-            action: "đã comment trong",
-            task: "Fix bug đăng nhập",
-            workspace: "Mobile App",
-            time: "1 ngày trước",
-        },
-    ];
+    const completionRate =
+        dashboardData?.summary.totalCards > 0
+            ? (
+                (dashboardData.summary.completedCards /
+                    dashboardData.summary.totalCards) *
+                100
+            ).toFixed(0)
+            : 0;
+
 
     return (
         <div className="flex min-h-screen">
@@ -118,10 +113,7 @@ export default function DashboardPage() {
                                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">71</div>
-                                <p className="text-xs text-muted-foreground">
-                                    <span className="text-green-600">+12%</span> so với tháng trước
-                                </p>
+                                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.totalCards}</div>}
                             </CardContent>
                         </Card>
 
@@ -131,9 +123,9 @@ export default function DashboardPage() {
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">49</div>
+                                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.completedCards}</div>}
                                 <p className="text-xs text-muted-foreground">
-                                    69% tỷ lệ hoàn thành
+                                    {completionRate}% tỷ lệ hoàn thành
                                 </p>
                             </CardContent>
                         </Card>
@@ -146,10 +138,7 @@ export default function DashboardPage() {
                                 <Clock className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">18</div>
-                                <p className="text-xs text-muted-foreground">
-                                    Trong 3 workspace
-                                </p>
+                                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.inProgressCards}</div>}
                             </CardContent>
                         </Card>
 
@@ -159,8 +148,7 @@ export default function DashboardPage() {
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">12</div>
-                                <p className="text-xs text-muted-foreground">Đang cộng tác</p>
+                                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.totalMembers}</div>}
                             </CardContent>
                         </Card>
                     </div>
@@ -297,30 +285,44 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {recentActivities.map((activity, index) => (
+                                {isLoading ? ([...Array(3)].map((_, index) => (
+                                    <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                                        <Skeleton className="h-9 w-9 rounded-full" />
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton className="h-4 w-3/4" />
+                                            <Skeleton className="h-3 w-1/2" />
+                                        </div>
+                                    </div>
+                                ))) : dashboardData?.recentActivities.map((activity) => (
                                     <div
-                                        key={index}
+                                        key={activity.id}
                                         className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
                                     >
                                         <Avatar className="h-9 w-9">
                                             <AvatarFallback>
-                                                {activity.user.charAt(0)}
+                                                {activity.user.fullName.charAt(0)}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 space-y-1">
                                             <p className="text-sm">
-                                                <span className="font-medium">{activity.user}</span>{" "}
+                                                <span className="font-medium">{activity.user.fullName}</span>{" "}
                                                 <span className="text-muted-foreground">
                                                     {activity.action}
                                                 </span>{" "}
-                                                <span className="font-medium">{activity.task}</span>
+                                                {activity.workspace ? (
+                                                    <Link to={`/ws/${activity.workspace.id}/settings`} className="font-medium">{activity.details}</Link>
+                                                ) : (
+                                                    <span className="font-medium">{activity.details}</span>
+                                                )}
                                             </p>
                                             <div className="flex items-center gap-2">
-                                                <Badge variant="secondary" className="text-xs">
-                                                    {activity.workspace}
-                                                </Badge>
+                                                {activity.workspace && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {activity.workspace.name}
+                                                    </Badge>
+                                                )}
                                                 <span className="text-xs text-muted-foreground">
-                                                    {activity.time}
+                                                    {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: vi })}
                                                 </span>
                                             </div>
                                         </div>
