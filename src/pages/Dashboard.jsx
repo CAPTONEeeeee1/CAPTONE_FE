@@ -46,7 +46,6 @@ export default function DashboardPage() {
                 setWorkspaces((workspacesResponse.workspaces || []).slice(0, 3));
                 setDashboardData(reportResponse);
             } catch (error) {
-                console.error("Error fetching dashboard data:", error);
                 toast.error("Không thể tải dữ liệu dashboard");
                 setWorkspaces([]);
                 setDashboardData(null);
@@ -81,17 +80,26 @@ export default function DashboardPage() {
                 100
             ).toFixed(0)
             : 0;
-
+    const translateAction = (action) => {
+        switch (action) {
+            case 'workspace_created':
+                return 'đã tạo workspace';
+            case 'board_created':
+                return 'đã tạo bảng';
+            case 'card_created':
+                return 'đã tạo thẻ';
+            default:
+                return action;
+        }
+    };
 
     return (
         <div className="flex min-h-screen">
             {/* Sidebar */}
             <DashboardSidebar />
-
             {/* Main content */}
             <div className="flex-1 ml-64">
                 <DashboardHeader />
-
                 <main className="p-6 space-y-6">
                     {/* Welcome Section */}
                     <div>
@@ -102,7 +110,6 @@ export default function DashboardPage() {
                             Đây là tổng quan về các dự án và công việc của bạn
                         </p>
                     </div>
-
                     {/* Stats Cards */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <Card>
@@ -116,7 +123,6 @@ export default function DashboardPage() {
                                 {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.totalCards}</div>}
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Hoàn thành</CardTitle>
@@ -129,7 +135,6 @@ export default function DashboardPage() {
                                 </p>
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">
@@ -141,7 +146,6 @@ export default function DashboardPage() {
                                 {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-card-foreground">{dashboardData?.summary.inProgressCards}</div>}
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Thành viên</CardTitle>
@@ -152,7 +156,6 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
                     </div>
-
                     {/* Workspaces Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -171,7 +174,6 @@ export default function DashboardPage() {
                                 </Link>
                             </Button>
                         </div>
-
                         {isLoading ? (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {[1, 2, 3].map((i) => (
@@ -262,7 +264,6 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         )}
-
                         {!isLoading && workspaces.length > 0 && (
                             <div className="text-center">
                                 <Button variant="outline" asChild>
@@ -274,7 +275,6 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
-
                     {/* Recent Activity */}
                     <Card>
                         <CardHeader>
@@ -307,10 +307,12 @@ export default function DashboardPage() {
                                             <p className="text-sm">
                                                 <span className="font-medium">{activity.user.fullName}</span>{" "}
                                                 <span className="text-muted-foreground">
-                                                    {activity.action}
+                                                    {translateAction(activity.action)}
                                                 </span>{" "}
-                                                {activity.workspace ? (
-                                                    <Link to={`/ws/${activity.workspace.id}/settings`} className="font-medium">{activity.details}</Link>
+                                                {activity.action === 'card_created' && activity.board ? (
+                                                    <Link to={`/workspaces/${activity.workspace.id}/boards/${activity.board.id}#card-${activity.entityId}`} className="font-medium">{activity.details}</Link>
+                                                ) : activity.workspace ? (
+                                                    <Link to={`/workspaces/${activity.workspace.id}`} className="font-medium">{activity.details}</Link>
                                                 ) : (
                                                     <span className="font-medium">{activity.details}</span>
                                                 )}
