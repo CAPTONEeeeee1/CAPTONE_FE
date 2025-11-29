@@ -70,6 +70,7 @@ export default function CreateWorkspacePage() {
             const workspaceData = {
                 name: name.trim(),
                 description: description.trim(),
+                visibility: isPrivate ? "private" : "public",
             };
 
             const response = await workspaceService.create(workspaceData);

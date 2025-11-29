@@ -1,24 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Search, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 export function DashboardHeader() {
     const navigate = useNavigate();
-    const [theme, setTheme] = useState(() => {
-        return localStorage.getItem("theme") || "dark";
-    });
-
-    useEffect(() => {
-        if (theme === "dark") {
-            document.documentElement.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-        }
-        localStorage.setItem("theme", theme);
-    }, [theme]);
+    const { theme, setTheme } = useTheme();
 
     const toggleTheme = () => {
         setTheme(theme === "dark" ? "light" : "dark");

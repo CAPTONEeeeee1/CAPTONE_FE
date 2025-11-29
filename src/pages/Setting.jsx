@@ -13,9 +13,10 @@ import { toast } from "sonner";
 import userService from "@/services/userService";
 import settingService from "@/services/settingService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function SettingsPage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { theme, setTheme } = useTheme();
 
     // Password change state
     const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -343,7 +344,7 @@ export default function SettingsPage() {
                                             <p className="font-medium">Chế độ tối (Dark Mode)</p>
                                             <p className="text-sm text-muted-foreground">Chuyển sang giao diện tối để dễ nhìn hơn.</p>
                                         </div>
-                                        <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
+                                        <Switch checked={theme === 'dark'} onCheckedChange={(value) => setTheme(value ? 'dark' : 'light')} />
                                     </div>
                                 </CardContent>
                             </Card>
