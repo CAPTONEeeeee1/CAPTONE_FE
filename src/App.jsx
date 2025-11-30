@@ -60,12 +60,8 @@ function App() {
           }
         />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
-
-        {/* THÊM ROUTE CHO QUÊN MẬT KHẨU VÀ ĐẶT LẠI MẬT KHẨU */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-        {/* === THÊM ROUTE CHO GOOGLE CALLBACK TẠI ĐÂY === */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protected Routes */}

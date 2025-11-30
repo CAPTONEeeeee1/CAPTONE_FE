@@ -2,9 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import boardService from "@/services/boardService";
+import workspaceService from "@/services/workspaceService";
+import apiClient from "@/lib/api";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { KanbanBoard } from "@/components/kanban-board";
+import { FilterDialog } from "@/components/kanban/FilterDialog";
+import { TimelineView } from "@/components/kanban/TimelineView";
+import { ListView } from "@/components/kanban/ListView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +24,8 @@ import {
   LayoutGrid,
   List,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
 
 export default function BoardPage() {
@@ -29,11 +35,32 @@ export default function BoardPage() {
   const [board, setBoard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filter states
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [filterType, setFilterType] = useState(null); // 'member', 'priority', 'label'
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [selectedPriority, setSelectedPriority] = useState(null);
+  const [selectedLabel, setSelectedLabel] = useState(null);
+
+  // Data for filters
+  const [boardMembers, setBoardMembers] = useState([]);
+  const [boardLabels, setBoardLabels] = useState([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
   useEffect(() => {
     if (boardId) {
       fetchBoard();
     }
   }, [boardId]);
+
+  useEffect(() => {
+    if (board?.workspaceId) {
+      loadBoardMembers();
+    }
+    if (board?.id) {
+      loadBoardLabels();
+    }
+  }, [board]);
 
   const fetchBoard = async () => {
     try {
@@ -46,6 +73,73 @@ export default function BoardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadBoardMembers = async () => {
+    if (!board?.workspaceId) return;
+    setIsLoadingMembers(true);
+    try {
+      const response = await workspaceService.getMembers(board.workspaceId);
+      const members = response.data?.members || response.members || [];
+      setBoardMembers(members);
+    } catch (error) {
+      console.error("Error loading workspace members:", error);
+      setBoardMembers([]);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  const loadBoardLabels = async () => {
+    if (!board?.id) return;
+    try {
+      const response = await apiClient.get(`/labels?boardId=${board.id}`);
+      setBoardLabels(response.labels || []);
+    } catch (error) {
+      console.error("Error loading board labels:", error);
+      setBoardLabels([]);
+    }
+  };
+
+  const handleOpenFilter = (type) => {
+    setFilterType(type);
+    setIsFilterDialogOpen(true);
+  };
+
+  const handleCloseFilter = () => {
+    setIsFilterDialogOpen(false);
+  };
+
+  const handleClearAllFilters = () => {
+    setSelectedMember(null);
+    setSelectedPriority(null);
+    setSelectedLabel(null);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedMember) count++;
+    if (selectedPriority) count++;
+    if (selectedLabel) count++;
+    return count;
+  };
+
+  const getActiveFilterText = () => {
+    const filters = [];
+    if (selectedMember) {
+      const member = boardMembers.find(m => (m.userId || m.user?.id) === selectedMember);
+      const user = member?.user || member;
+      filters.push(user?.fullName || user?.email || 'Thành viên');
+    }
+    if (selectedPriority) {
+      const priorityMap = { low: 'Thấp', medium: 'Trung bình', high: 'Cao' };
+      filters.push(priorityMap[selectedPriority] || selectedPriority);
+    }
+    if (selectedLabel) {
+      const label = boardLabels.find(l => l.id === selectedLabel);
+      filters.push(label?.name || 'Nhãn');
+    }
+    return filters.join(', ');
   };
 
   if (isLoading) {
@@ -152,15 +246,26 @@ export default function BoardPage() {
               {/* Bộ lọc */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant={getActiveFilterCount() > 0 ? "default" : "outline"}>
                     <Filter className="mr-2 h-4 w-4" />
                     Bộ lọc
+                    {getActiveFilterCount() > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {getActiveFilterCount()}
+                      </Badge>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Theo thành viên</DropdownMenuItem>
-                  <DropdownMenuItem>Theo trạng thái</DropdownMenuItem>
-                  <DropdownMenuItem>Theo deadline</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenFilter('member')}>
+                    Theo thành viên
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleOpenFilter('priority')}>
+                    Theo mức độ ưu tiên
+                  </DropdownMenuItem>
+                  {/* <DropdownMenuItem onClick={() => handleOpenFilter('label')}>
+                    Theo nhãn
+                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -210,10 +315,95 @@ export default function BoardPage() {
             </div>
           </div>
 
-          {/* Kanban Board */}
-          <KanbanBoard board={board} onUpdate={fetchBoard} />
+          {/* Active Filters */}
+          {getActiveFilterCount() > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">Đang lọc theo:</span>
+              {selectedMember && (
+                <Badge variant="secondary" className="py-1.5 px-3 gap-2">
+                  {boardMembers.find(m => (m.userId || m.user?.id) === selectedMember)?.user?.fullName ||
+                    boardMembers.find(m => (m.userId || m.user?.id) === selectedMember)?.user?.email ||
+                    'Thành viên'}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => setSelectedMember(null)}
+                  />
+                </Badge>
+              )}
+              {selectedPriority && (
+                <Badge variant="secondary" className="py-1.5 px-3 gap-2">
+                  Mức độ: {selectedPriority === 'low' ? 'Thấp' : selectedPriority === 'medium' ? 'Trung bình' : 'Cao'}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => setSelectedPriority(null)}
+                  />
+                </Badge>
+              )}
+              {selectedLabel && (
+                <Badge variant="secondary" className="py-1.5 px-3 gap-2">
+                  {boardLabels.find(l => l.id === selectedLabel)?.name || 'Nhãn'}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => setSelectedLabel(null)}
+                  />
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllFilters}
+              >
+                Xóa tất cả
+              </Button>
+            </div>
+          )}
+
+          {/* View Rendering */}
+          {viewMode === 'kanban' && (
+            <KanbanBoard
+              board={board}
+              onUpdate={fetchBoard}
+              selectedMember={selectedMember}
+              selectedPriority={selectedPriority}
+              selectedLabel={selectedLabel}
+            />
+          )}
+
+          {viewMode === 'timeline' && (
+            <TimelineView
+              board={board}
+              selectedMember={selectedMember}
+              selectedPriority={selectedPriority}
+              selectedLabel={selectedLabel}
+            />
+          )}
+
+          {viewMode === 'list' && (
+            <ListView
+              board={board}
+              selectedMember={selectedMember}
+              selectedPriority={selectedPriority}
+              selectedLabel={selectedLabel}
+            />
+          )}
         </main>
       </div>
+
+      {/* Filter Dialog */}
+      <FilterDialog
+        isOpen={isFilterDialogOpen}
+        onClose={handleCloseFilter}
+        filterType={filterType}
+        members={boardMembers}
+        labels={boardLabels}
+        selectedMember={selectedMember}
+        selectedPriority={selectedPriority}
+        selectedLabel={selectedLabel}
+        onSelectMember={setSelectedMember}
+        onSelectPriority={setSelectedPriority}
+        onSelectLabel={setSelectedLabel}
+        isLoadingMembers={isLoadingMembers}
+      />
     </div>
   );
 }

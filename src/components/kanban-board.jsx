@@ -21,7 +21,7 @@ import TaskFormDialog from "./kanban/TaskFormDialog";
 import { ListFormDialog, DeleteListDialog } from "./kanban/ListDialogs";
 
 
-export function KanbanBoard({ board, onUpdate }) {
+export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority, selectedLabel }) {
   const [columns, setColumns] = useState([]);
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedList, setDraggedList] = useState(null);
@@ -920,6 +920,53 @@ export function KanbanBoard({ board, onUpdate }) {
     }
   }, [listToDelete, onUpdate]);
 
+  // Filter cards based on selected filters
+  const filterCards = useCallback((tasks) => {
+    if (!tasks) return tasks;
+
+    // If no filters are active, return all tasks
+    if (!selectedMember && !selectedPriority && !selectedLabel) {
+      return tasks;
+    }
+
+    return tasks.filter(task => {
+      const taskData = task.task || task;
+      let matches = true;
+
+      // Filter by member
+      if (selectedMember) {
+        const members = taskData.members || [];
+        const hasMember = members.some(member => {
+          const memberUserId = member.userId || member.user?.id || member.id;
+          return memberUserId === selectedMember;
+        });
+        matches = matches && hasMember;
+      }
+
+      // Filter by priority
+      if (selectedPriority) {
+        matches = matches && taskData.priority === selectedPriority;
+      }
+
+      // Filter by label
+      if (selectedLabel) {
+        const labels = taskData.labels || [];
+        const hasLabel = labels.some(label => {
+          const labelId = label.labelId || label.id;
+          return labelId === selectedLabel;
+        });
+        matches = matches && hasLabel;
+      }
+
+      return matches;
+    });
+  }, [selectedMember, selectedPriority, selectedLabel]);
+
+  const filteredColumns = columns.map(column => ({
+    ...column,
+    tasks: filterCards(column.tasks)
+  }));
+
   if (!board || columns.length === 0) {
     return (
       <Card>
@@ -936,7 +983,7 @@ export function KanbanBoard({ board, onUpdate }) {
 
   return (
     <div className="flex gap-6 overflow-x-auto pb-6 px-2">
-      {columns.map((column) => (
+      {filteredColumns.map((column) => (
         <KanbanColumn
           key={column.id}
           column={column}

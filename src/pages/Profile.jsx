@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Upload, Loader2 } from "lucide-react";
+import { User, Upload, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import userService from "@/services/userService";
 
@@ -16,6 +16,7 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -65,6 +66,57 @@ export default function ProfilePage() {
                 [name]: ""
             }));
         }
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error("Vui lòng chọn file ảnh");
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Kích thước ảnh không được vượt quá 5MB");
+            return;
+        }
+
+        // Read file and convert to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData(prev => ({
+                ...prev,
+                avatar: reader.result
+            }));
+            // Clear error
+            if (errors.avatar) {
+                setErrors(prev => ({
+                    ...prev,
+                    avatar: ""
+                }));
+            }
+        };
+        reader.onerror = () => {
+            toast.error("Không thể đọc file ảnh");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveAvatar = () => {
+        setFormData(prev => ({
+            ...prev,
+            avatar: ""
+        }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
     };
 
     const validateForm = () => {
@@ -269,20 +321,71 @@ export default function ProfilePage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="avatar">URL ảnh đại diện</Label>
-                                        <Input
-                                            id="avatar"
-                                            name="avatar"
-                                            type="url"
-                                            value={formData.avatar}
-                                            onChange={handleInputChange}
-                                            className={errors.avatar ? "border-red-500" : ""}
-                                            placeholder="https://example.com/avatar.jpg image link service"
+                                        <Label>Ảnh đại diện</Label>
+
+                                        {/* Avatar Preview */}
+                                        {formData.avatar && (
+                                            <div className="flex items-center gap-4">
+                                                <Avatar className="h-20 w-20 border-2">
+                                                    <AvatarImage src={formData.avatar} alt="Preview" />
+                                                    <AvatarFallback>
+                                                        {getInitials(formData.fullName)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleRemoveAvatar}
+                                                >
+                                                    <X className="h-4 w-4 mr-2" />
+                                                    Xóa ảnh
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {/* File Input (Hidden) */}
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileSelect}
+                                            className="hidden"
                                         />
+
+                                        {/* Upload Button */}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleUploadClick}
+                                            className="w-full"
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            Chọn ảnh từ máy
+                                        </Button>
+
+                                        {/* URL Input */}
+                                        <div className="relative">
+                                            <Label htmlFor="avatar" className="text-sm text-muted-foreground">
+                                                Hoặc nhập URL ảnh
+                                            </Label>
+                                            <Input
+                                                id="avatar"
+                                                name="avatar"
+                                                type="url"
+                                                value={formData.avatar}
+                                                onChange={handleInputChange}
+                                                className={errors.avatar ? "border-red-500" : ""}
+                                                placeholder="https://example.com/avatar.jpg"
+                                            />
+                                        </div>
+
                                         {errors.avatar && (
                                             <p className="text-sm text-red-500">{errors.avatar}</p>
                                         )}
-                                        <p className="text-sm text-muted-foreground">Nhập URL hình ảnh đại diện</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Tải ảnh từ máy (tối đa 5MB) hoặc nhập URL hình ảnh
+                                        </p>
                                     </div>
 
                                     <div className="space-y-2">
