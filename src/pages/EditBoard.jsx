@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import boardService from "@/services/boardService";
 import workspaceService from "@/services/workspaceService";
+import listService from "@/services/listService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     ArrowLeft,
     Layout,
@@ -22,6 +25,10 @@ import {
     GripVertical,
     X,
     AlertCircle,
+    Pencil,
+    ChevronUp,
+    ChevronDown,
+    Trash2,
 } from "lucide-react";
 
 const colorOptions = [
@@ -34,6 +41,123 @@ const colorOptions = [
     { name: "Indigo", value: "bg-indigo-500", hex: "#6366F1" },
     { name: "Teal", value: "bg-teal-500", hex: "#14B8A6" },
 ];
+
+// Component for individual column item with edit/delete/reorder in EditBoard
+function ColumnItemEdit({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown, isOperating }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(column.name);
+
+    const handleSaveEdit = async () => {
+        if (editName.trim() && editName.trim() !== column.name) {
+            await onEdit(column.id, editName.trim());
+        }
+        setIsEditing(false);
+    };
+
+    const handleCancelEdit = () => {
+        setEditName(column.name);
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="flex items-center gap-2 p-3 border-2 rounded-lg bg-muted/20 group hover:border-primary/30 transition-colors">
+            <Badge
+                variant="secondary"
+                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-0 font-semibold"
+            >
+                {index + 1}
+            </Badge>
+
+            {isEditing ? (
+                <div className="flex-1 flex items-center gap-2">
+                    <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit();
+                            if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                        className="h-8 text-sm"
+                        autoFocus
+                        disabled={isOperating}
+                    />
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveEdit}
+                        disabled={isOperating}
+                        className="h-8 px-3"
+                    >
+                        Lưu
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        disabled={isOperating}
+                        className="h-8 px-3"
+                    >
+                        Hủy
+                    </Button>
+                </div>
+            ) : (
+                <>
+                    <span className="flex-1 font-medium text-sm">{column.name}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Move Up/Down */}
+                        <div className="flex flex-col">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={onMoveUp}
+                                disabled={index === 0 || isOperating}
+                                className="h-5 w-5 p-0 hover:bg-primary/10"
+                            >
+                                <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={onMoveDown}
+                                disabled={index === totalColumns - 1 || isOperating}
+                                className="h-5 w-5 p-0 hover:bg-primary/10"
+                            >
+                                <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </div>
+
+                        {/* Edit */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsEditing(true)}
+                            disabled={isOperating}
+                            className="h-8 w-8 hover:bg-primary/10"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+
+                        {/* Delete */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onRemove(column)}
+                            disabled={isOperating}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
 
 export default function EditBoardPage() {
     const navigate = useNavigate();
@@ -48,6 +172,10 @@ export default function EditBoardPage() {
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
     const [columns, setColumns] = useState([]);
     const [newColumnName, setNewColumnName] = useState("");
+    const [isListOperating, setIsListOperating] = useState(false);
+    const [deleteListDialogOpen, setDeleteListDialogOpen] = useState(false);
+    const [listToDelete, setListToDelete] = useState(null);
+    const [moveToListId, setMoveToListId] = useState("");
 
     // Check permission first
     useEffect(() => {
@@ -98,11 +226,13 @@ export default function EditBoardPage() {
                 // Set columns from board lists
                 if (board.lists && board.lists.length > 0) {
                     const loadedColumns = board.lists
-                        .sort((a, b) => a.order - b.order)
+                        .sort((a, b) => a.orderIdx - b.orderIdx)
                         .map((list) => ({
                             id: list.id,
                             name: list.name,
-                            order: list.order,
+                            orderIdx: list.orderIdx,
+                            isDone: list.isDone || false,
+                            cardCount: list._count?.cards || 0
                         }));
                     setColumns(loadedColumns);
                 }
@@ -119,23 +249,138 @@ export default function EditBoardPage() {
         }
     }, [boardId, hasPermission]);
 
-    const handleAddColumn = () => {
-        if (newColumnName.trim()) {
+    const handleAddColumn = async () => {
+        if (!newColumnName.trim()) {
+            toast.error("Vui lòng nhập tên cột");
+            return;
+        }
+
+        try {
+            setIsListOperating(true);
+            const response = await listService.create(boardId, newColumnName.trim());
+            const newList = response.list;
+
             const newColumn = {
-                id: Date.now(),
-                name: newColumnName.trim(),
-                order: columns.length,
+                id: newList.id,
+                name: newList.name,
+                orderIdx: newList.orderIdx,
+                isDone: newList.isDone || false,
+                cardCount: 0
             };
+
             setColumns([...columns, newColumn]);
             setNewColumnName("");
+            toast.success("Đã thêm cột mới");
+        } catch (error) {
+            console.error("Error creating list:", error);
+            toast.error(error.response?.data?.error || "Không thể tạo cột");
+        } finally {
+            setIsListOperating(false);
         }
     };
 
-    const handleRemoveColumn = (id) => {
-        if (columns.length > 1) {
-            setColumns(columns.filter((col) => col.id !== id));
-        } else {
-            toast.error("Phải có ít nhất 1 cột");
+    const handleEditColumn = async (listId, newName) => {
+        if (!newName.trim()) {
+            toast.error("Tên cột không được để trống");
+            return;
+        }
+
+        try {
+            setIsListOperating(true);
+            await listService.update(listId, { name: newName.trim() });
+
+            setColumns(columns.map(col =>
+                col.id === listId ? { ...col, name: newName.trim() } : col
+            ));
+
+            toast.success("Đã cập nhật tên cột");
+        } catch (error) {
+            console.error("Error updating list:", error);
+            toast.error(error.response?.data?.error || "Không thể cập nhật cột");
+        } finally {
+            setIsListOperating(false);
+        }
+    };
+
+    const handleRemoveColumn = (column) => {
+        setListToDelete(column);
+        setMoveToListId("");
+        setDeleteListDialogOpen(true);
+    };
+
+    const handleConfirmDeleteList = async () => {
+        if (!listToDelete) return;
+
+        try {
+            setIsListOperating(true);
+
+            // If list has cards, need to move them
+            if (listToDelete.cardCount > 0 && !moveToListId) {
+                toast.error("Vui lòng chọn cột đích để chuyển các thẻ");
+                setIsListOperating(false);
+                return;
+            }
+
+            await listService.delete(listToDelete.id, moveToListId || null);
+
+            setColumns(columns.filter(col => col.id !== listToDelete.id));
+            setDeleteListDialogOpen(false);
+            setListToDelete(null);
+            setMoveToListId("");
+            toast.success("Đã xóa cột thành công");
+        } catch (error) {
+            console.error("Error deleting list:", error);
+            toast.error(error.response?.data?.error || "Không thể xóa cột");
+        } finally {
+            setIsListOperating(false);
+        }
+    };
+
+    const handleReorderColumn = async (fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return;
+
+        const newColumns = [...columns];
+        const [movedColumn] = newColumns.splice(fromIndex, 1);
+        newColumns.splice(toIndex, 0, movedColumn);
+
+        // Update order indexes
+        const reorderedColumns = newColumns.map((col, index) => ({
+            ...col,
+            orderIdx: index
+        }));
+
+        // Optimistically update UI
+        setColumns(reorderedColumns);
+
+        try {
+            setIsListOperating(true);
+            const orders = reorderedColumns.map(col => ({
+                id: col.id,
+                orderIdx: col.orderIdx
+            }));
+
+            await listService.reorder(boardId, orders);
+            toast.success("Đã sắp xếp lại cột");
+        } catch (error) {
+            console.error("Error reordering lists:", error);
+            toast.error(error.response?.data?.error || "Không thể sắp xếp lại cột");
+            // Revert on error
+            const response = await boardService.getById(boardId);
+            const board = response.board || response;
+            if (board.lists) {
+                const revertedColumns = board.lists
+                    .sort((a, b) => a.orderIdx - b.orderIdx)
+                    .map((list) => ({
+                        id: list.id,
+                        name: list.name,
+                        orderIdx: list.orderIdx,
+                        isDone: list.isDone || false,
+                        cardCount: list._count?.cards || 0
+                    }));
+                setColumns(revertedColumns);
+            }
+        } finally {
+            setIsListOperating(false);
         }
     };
 
@@ -291,10 +536,37 @@ export default function EditBoardPage() {
                                             <CardTitle>Cấu hình cột</CardTitle>
                                         </div>
                                         <CardDescription>
-                                            Xem các cột hiện tại của board
+                                            Quản lý các cột của board - Thêm, sửa, xóa và sắp xếp lại
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        {/* Add new column */}
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Tên cột mới..."
+                                                value={newColumnName}
+                                                onChange={(e) => setNewColumnName(e.target.value)}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        handleAddColumn();
+                                                    }
+                                                }}
+                                                disabled={isListOperating}
+                                                className="border-2"
+                                            />
+                                            <Button
+                                                type="button"
+                                                onClick={handleAddColumn}
+                                                variant="outline"
+                                                disabled={isListOperating}
+                                                className="flex-shrink-0"
+                                            >
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Thêm
+                                            </Button>
+                                        </div>
+
                                         {/* Columns list */}
                                         <div className="space-y-2">
                                             <Label className="text-sm font-semibold">
@@ -303,21 +575,17 @@ export default function EditBoardPage() {
                                             <div className="space-y-2">
                                                 {columns.length > 0 ? (
                                                     columns.map((column, index) => (
-                                                        <div
+                                                        <ColumnItemEdit
                                                             key={column.id}
-                                                            className="flex items-center gap-2 p-3 border-2 rounded-lg bg-muted/20"
-                                                        >
-                                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-0 font-semibold"
-                                                            >
-                                                                {index + 1}
-                                                            </Badge>
-                                                            <span className="flex-1 font-medium text-sm">
-                                                                {column.name}
-                                                            </span>
-                                                        </div>
+                                                            column={column}
+                                                            index={index}
+                                                            totalColumns={columns.length}
+                                                            onEdit={handleEditColumn}
+                                                            onRemove={handleRemoveColumn}
+                                                            onMoveUp={() => handleReorderColumn(index, index - 1)}
+                                                            onMoveDown={() => handleReorderColumn(index, index + 1)}
+                                                            isOperating={isListOperating}
+                                                        />
                                                     ))
                                                 ) : (
                                                     <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
@@ -327,7 +595,7 @@ export default function EditBoardPage() {
                                                 )}
                                             </div>
                                             <p className="text-xs text-muted-foreground mt-2">
-                                                💡 Lưu ý: Chỉnh sửa cột sẽ được thực hiện trực tiếp trên board
+                                                💡 Tip: Bạn có thể thêm, xóa, sửa tên và sắp xếp lại cột ngay tại đây
                                             </p>
                                         </div>
                                     </CardContent>
@@ -427,6 +695,62 @@ export default function EditBoardPage() {
                     </div>
                 </main>
             </div>
+
+            {/* Delete List Dialog */}
+            <AlertDialog open={deleteListDialogOpen} onOpenChange={setDeleteListDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Xóa cột "{listToDelete?.name}"</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {listToDelete?.cardCount > 0 ? (
+                                <div className="space-y-3">
+                                    <p className="text-destructive font-medium">
+                                        ⚠️ Cột này có {listToDelete.cardCount} thẻ.
+                                    </p>
+                                    <p>Vui lòng chọn cột đích để chuyển các thẻ trước khi xóa:</p>
+                                    <Select value={moveToListId} onValueChange={setMoveToListId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Chọn cột đích..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {columns
+                                                .filter(col => col.id !== listToDelete?.id)
+                                                .map(col => (
+                                                    <SelectItem key={col.id} value={col.id}>
+                                                        {col.name} ({col.cardCount} thẻ)
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ) : (
+                                <p>
+                                    Bạn có chắc chắn muốn xóa cột này? Hành động này không thể hoàn tác.
+                                </p>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            onClick={() => {
+                                setDeleteListDialogOpen(false);
+                                setListToDelete(null);
+                                setMoveToListId("");
+                            }}
+                            disabled={isListOperating}
+                        >
+                            Hủy
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmDeleteList}
+                            disabled={isListOperating || (listToDelete?.cardCount > 0 && !moveToListId)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isListOperating ? "Đang xóa..." : "Xóa cột"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

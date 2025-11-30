@@ -23,6 +23,10 @@ import {
     Users,
     Globe,
     Hash,
+    Pencil,
+    ChevronUp,
+    ChevronDown,
+    Trash2,
 } from "lucide-react";
 
 const colorOptions = [
@@ -58,10 +62,124 @@ const modeOptions = [
 ];
 
 const defaultColumns = [
-    { id: 1, name: "To Do", order: 0 },
+    { id: 1, name: "Todo", order: 0 },
     { id: 2, name: "In Progress", order: 1 },
     { id: 3, name: "Done", order: 2 },
 ];
+
+// Component for individual column item with edit/delete/reorder
+function ColumnItem({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(column.name);
+
+    const handleSaveEdit = () => {
+        if (editName.trim() && editName.trim() !== column.name) {
+            onEdit(column.id, editName.trim());
+        }
+        setIsEditing(false);
+    };
+
+    const handleCancelEdit = () => {
+        setEditName(column.name);
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="flex items-center gap-2 p-3 border-2 rounded-lg bg-muted/20 group hover:border-primary/30 transition-colors">
+            <Badge
+                variant="secondary"
+                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-0 font-semibold"
+            >
+                {index + 1}
+            </Badge>
+
+            {isEditing ? (
+                <div className="flex-1 flex items-center gap-2">
+                    <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit();
+                            if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                        className="h-8 text-sm"
+                        autoFocus
+                    />
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveEdit}
+                        className="h-8 px-3"
+                    >
+                        Lưu
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        className="h-8 px-3"
+                    >
+                        Hủy
+                    </Button>
+                </div>
+            ) : (
+                <>
+                    <span className="flex-1 font-medium text-sm">{column.name}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Move Up/Down */}
+                        <div className="flex flex-col">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={onMoveUp}
+                                disabled={index === 0}
+                                className="h-5 w-5 p-0 hover:bg-primary/10"
+                            >
+                                <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={onMoveDown}
+                                disabled={index === totalColumns - 1}
+                                className="h-5 w-5 p-0 hover:bg-primary/10"
+                            >
+                                <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </div>
+
+                        {/* Edit */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsEditing(true)}
+                            className="h-8 w-8 hover:bg-primary/10"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+
+                        {/* Delete */}
+                        {totalColumns > 1 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onRemove(column.id)}
+                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
 
 export default function CreateBoardPage() {
     const navigate = useNavigate();
@@ -111,19 +229,72 @@ export default function CreateBoardPage() {
     }, [workspaceId, navigate]);
 
     const handleAddColumn = () => {
-        if (newColumnName.trim()) {
-            const newColumn = {
-                id: Date.now(),
-                name: newColumnName.trim(),
-                order: columns.length,
-            };
-            setColumns([...columns, newColumn]);
-            setNewColumnName("");
+        if (!newColumnName.trim()) {
+            toast.error("Vui lòng nhập tên cột");
+            return;
         }
+
+        // Check for duplicate names
+        const duplicateName = columns.find(col =>
+            col.name.toLowerCase() === newColumnName.trim().toLowerCase()
+        );
+        if (duplicateName) {
+            toast.error("Tên cột đã tồn tại");
+            return;
+        }
+
+        const newColumn = {
+            id: Date.now(),
+            name: newColumnName.trim(),
+            order: columns.length,
+            isNew: true
+        };
+        setColumns([...columns, newColumn]);
+        setNewColumnName("");
+        toast.success("Đã thêm cột mới");
+    }; const handleRemoveColumn = (id) => {
+        if (columns.length <= 1) {
+            toast.error("Phải có ít nhất 1 cột");
+            return;
+        }
+        setColumns(columns.filter((col) => col.id !== id));
+        toast.success("Đã xóa cột");
     };
 
-    const handleRemoveColumn = (id) => {
-        setColumns(columns.filter((col) => col.id !== id));
+    const handleEditColumn = (id, newName) => {
+        if (!newName.trim()) {
+            toast.error("Tên cột không được để trống");
+            return;
+        }
+
+        // Check for duplicate names (excluding current column)
+        const duplicateName = columns.find(col =>
+            col.id !== id && col.name.toLowerCase() === newName.trim().toLowerCase()
+        );
+        if (duplicateName) {
+            toast.error("Tên cột đã tồn tại");
+            return;
+        }
+
+        setColumns(columns.map(col =>
+            col.id === id ? { ...col, name: newName.trim() } : col
+        ));
+        toast.success("Đã cập nhật tên cột");
+    }; const handleReorderColumn = (fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return;
+
+        const newColumns = [...columns];
+        const [movedColumn] = newColumns.splice(fromIndex, 1);
+        newColumns.splice(toIndex, 0, movedColumn);
+
+        // Update order indexes
+        const reorderedColumns = newColumns.map((col, index) => ({
+            ...col,
+            order: index
+        }));
+
+        setColumns(reorderedColumns);
+        toast.success("Đã sắp xếp lại cột");
     };
 
     const handleSubmit = async (e) => {
@@ -152,6 +323,15 @@ export default function CreateBoardPage() {
             // Add keySlug if provided
             if (keySlug.trim()) {
                 boardData.keySlug = keySlug.trim().toUpperCase();
+            }
+
+            // Add lists data
+            if (columns.length > 0) {
+                boardData.lists = columns.map((col, index) => ({
+                    name: col.name,
+                    orderIdx: index,
+                    isDone: col.name.toLowerCase().includes('done') || col.name.toLowerCase().includes('hoàn thành')
+                }));
             }
 
             const response = await boardService.create(boardData);
@@ -374,36 +554,20 @@ export default function CreateBoardPage() {
                                             </Label>
                                             <div className="space-y-2">
                                                 {columns.map((column, index) => (
-                                                    <div
+                                                    <ColumnItem
                                                         key={column.id}
-                                                        className="flex items-center gap-2 p-3 border-2 rounded-lg bg-muted/20 group"
-                                                    >
-                                                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-0 font-semibold"
-                                                        >
-                                                            {index + 1}
-                                                        </Badge>
-                                                        <span className="flex-1 font-medium text-sm">
-                                                            {column.name}
-                                                        </span>
-                                                        {columns.length > 1 && (
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleRemoveColumn(column.id)}
-                                                                className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-opacity"
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                                        column={column}
+                                                        index={index}
+                                                        totalColumns={columns.length}
+                                                        onEdit={handleEditColumn}
+                                                        onRemove={handleRemoveColumn}
+                                                        onMoveUp={() => handleReorderColumn(index, index - 1)}
+                                                        onMoveDown={() => handleReorderColumn(index, index + 1)}
+                                                    />
                                                 ))}
                                             </div>
                                             <p className="text-xs text-muted-foreground mt-2">
-                                                💡 Tip: Bạn có thể thêm hoặc xóa cột bất kỳ lúc nào sau khi tạo board
+                                                💡 Tip: Bạn có thể thêm, xóa, sửa tên và sắp xếp lại cột bất kỳ lúc nào sau khi tạo board
                                             </p>
                                         </div>
                                     </CardContent>

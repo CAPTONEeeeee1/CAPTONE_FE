@@ -1,4 +1,4 @@
-import { ThemeProvider } from './components/ThemeProvider';
+import './App.css'
 import { Routes, Route } from "react-router-dom";
 import React from 'react';
 import HomePage from './pages/Home';
@@ -33,7 +33,7 @@ import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 function App() {
   return (
-    <ThemeProvider>
+    <>
       <Routes>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
@@ -174,7 +174,7 @@ function App() {
           }
         />
       </Routes>
-    </ThemeProvider>
+    </>
   )
 }
 

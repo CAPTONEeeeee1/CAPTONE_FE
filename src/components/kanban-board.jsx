@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import cardService from "@/services/cardService";
 import commentService from "@/services/commentService";
 import workspaceService from "@/services/workspaceService";
+import listService from "@/services/listService";
 import apiClient from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -14,14 +15,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Calendar as CalendarIcon, Clock, User, MessageSquare, Send, Pencil, Trash2, X, Tag, MoreVertical, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, MessageSquare, Send, Pencil, Trash2, X, Tag, MoreVertical, AlertCircle, Plus } from "lucide-react";
 import KanbanColumn from "./kanban/KanbanColumn";
 import TaskFormDialog from "./kanban/TaskFormDialog";
+import { ListFormDialog, DeleteListDialog } from "./kanban/ListDialogs";
 
 
 export function KanbanBoard({ board, onUpdate }) {
   const [columns, setColumns] = useState([]);
   const [draggedTask, setDraggedTask] = useState(null);
+  const [draggedList, setDraggedList] = useState(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -59,6 +62,13 @@ export function KanbanBoard({ board, onUpdate }) {
   const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
+
+  const [isAddListOpen, setIsAddListOpen] = useState(false);
+  const [isEditListOpen, setIsEditListOpen] = useState(false);
+  const [editingList, setEditingList] = useState(null);
+  const [deleteListDialogOpen, setDeleteListDialogOpen] = useState(false);
+  const [listToDelete, setListToDelete] = useState(null);
+  const [isListOperating, setIsListOperating] = useState(false);
 
   useEffect(() => {
     if (board && board.lists) {
@@ -176,6 +186,75 @@ export function KanbanBoard({ board, onUpdate }) {
       setIsLoadingCards(false);
     }
   }, []);
+
+  const handleListDragStart = useCallback((list) => {
+    setDraggedList(list);
+  }, []);
+
+  const handleListDragOver = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const handleListDrop = useCallback(async (targetListId) => {
+    if (!draggedList || draggedList.id === targetListId) {
+      setDraggedList(null);
+      return;
+    }
+
+    const draggedIndex = columns.findIndex(col => col.id === draggedList.id);
+    const targetIndex = columns.findIndex(col => col.id === targetListId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedList(null);
+      return;
+    }
+
+    // Optimistically update UI
+    const newColumns = [...columns];
+    const [movedColumn] = newColumns.splice(draggedIndex, 1);
+    newColumns.splice(targetIndex, 0, movedColumn);
+
+    // Update orderIdx for all columns
+    const updatedColumns = newColumns.map((col, index) => ({
+      ...col,
+      orderIdx: index
+    }));
+
+    setColumns(updatedColumns);
+    setDraggedList(null);
+
+    // Call API to persist the change
+    try {
+      const orders = updatedColumns.map(col => ({
+        id: col.id,
+        orderIdx: col.orderIdx
+      }));
+
+      await listService.reorder(board.id, orders);
+      toast.success("Đã sắp xếp lại cột!");
+
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error reordering lists:", error);
+      toast.error("Không thể sắp xếp lại cột");
+
+      // Revert to original order on error
+      if (board && board.lists) {
+        const revertedColumns = board.lists
+          .sort((a, b) => a.orderIdx - b.orderIdx)
+          .map((list) => ({
+            id: list.id,
+            title: list.name,
+            orderIdx: list.orderIdx,
+            isDone: list.isDone,
+            tasks: columns.find(c => c.id === list.id)?.tasks || [],
+          }));
+        setColumns(revertedColumns);
+      }
+    }
+  }, [draggedList, columns, board, onUpdate]);
 
   const handleDragStart = useCallback((task, columnId) => {
     setDraggedTask({ task, columnId });
@@ -749,6 +828,98 @@ export function KanbanBoard({ board, onUpdate }) {
     return 'border-border';
   }, []);
 
+  const handleCreateList = useCallback(async (name) => {
+    if (!board?.id) return;
+
+    try {
+      setIsListOperating(true);
+      const response = await listService.create(board.id, name);
+      const newList = response.list;
+
+      const newColumn = {
+        id: newList.id,
+        title: newList.name,
+        orderIdx: newList.orderIdx,
+        isDone: newList.isDone,
+        tasks: []
+      };
+
+      setColumns(prev => [...prev, newColumn].sort((a, b) => a.orderIdx - b.orderIdx));
+      setIsAddListOpen(false);
+      toast.success("Tạo danh sách thành công!");
+
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error creating list:", error);
+      toast.error(error.response?.data?.error || "Không thể tạo danh sách");
+    } finally {
+      setIsListOperating(false);
+    }
+  }, [board?.id, onUpdate]);
+
+  const handleEditList = useCallback((list) => {
+    setEditingList(list);
+    setIsEditListOpen(true);
+  }, []);
+
+  const handleUpdateList = useCallback(async (name) => {
+    if (!editingList) return;
+
+    try {
+      setIsListOperating(true);
+      await listService.update(editingList.id, { name });
+
+      setColumns(prev => prev.map(col =>
+        col.id === editingList.id
+          ? { ...col, title: name }
+          : col
+      ));
+
+      setIsEditListOpen(false);
+      setEditingList(null);
+      toast.success("Cập nhật danh sách thành công!");
+
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error updating list:", error);
+      toast.error(error.response?.data?.error || "Không thể cập nhật danh sách");
+    } finally {
+      setIsListOperating(false);
+    }
+  }, [editingList, onUpdate]);
+
+  const handleDeleteList = useCallback((list) => {
+    setListToDelete(list);
+    setDeleteListDialogOpen(true);
+  }, []);
+
+  const handleConfirmDeleteList = useCallback(async (moveToListId) => {
+    if (!listToDelete) return;
+
+    try {
+      setIsListOperating(true);
+      await listService.delete(listToDelete.id, moveToListId);
+
+      setColumns(prev => prev.filter(col => col.id !== listToDelete.id));
+      setDeleteListDialogOpen(false);
+      setListToDelete(null);
+      toast.success("Xóa danh sách thành công!");
+
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error deleting list:", error);
+      toast.error(error.response?.data?.error || "Không thể xóa danh sách");
+    } finally {
+      setIsListOperating(false);
+    }
+  }, [listToDelete, onUpdate]);
+
   if (!board || columns.length === 0) {
     return (
       <Card>
@@ -770,6 +941,7 @@ export function KanbanBoard({ board, onUpdate }) {
           key={column.id}
           column={column}
           draggedTask={draggedTask}
+          draggedList={draggedList}
           currentUserRole={currentUserRole}
           isLoadingCards={isLoadingCards}
           onDragOver={handleDragOver}
@@ -782,8 +954,28 @@ export function KanbanBoard({ board, onUpdate }) {
           onCardClick={openCardDetail}
           getPriorityColor={getPriorityColor}
           getColumnBorderColor={getColumnBorderColor}
+          onEditList={handleEditList}
+          onDeleteList={handleDeleteList}
+          onListDragStart={handleListDragStart}
+          onListDragOver={handleListDragOver}
+          onListDrop={handleListDrop}
         />
       ))}
+
+      {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+        <div className="flex-shrink-0 w-80">
+          <Card className="h-full bg-muted/20 border-2 border-dashed hover:border-primary/50 transition-all cursor-pointer" onClick={() => setIsAddListOpen(true)}>
+            <CardContent className="flex items-center justify-center min-h-[200px]">
+              <div className="text-center space-y-2">
+                <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-primary" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">Thêm danh sách mới</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <TaskFormDialog
         isOpen={isAddTaskOpen}
@@ -1199,6 +1391,39 @@ export function KanbanBoard({ board, onUpdate }) {
           )}
         </DialogContent>
       </Dialog>
+
+      <ListFormDialog
+        isOpen={isAddListOpen}
+        onClose={() => setIsAddListOpen(false)}
+        onSubmit={handleCreateList}
+        isEditMode={false}
+        isLoading={isListOperating}
+      />
+
+      <ListFormDialog
+        isOpen={isEditListOpen}
+        onClose={() => {
+          setIsEditListOpen(false);
+          setEditingList(null);
+        }}
+        onSubmit={handleUpdateList}
+        isEditMode={true}
+        initialName={editingList?.title || ""}
+        isLoading={isListOperating}
+      />
+
+      <DeleteListDialog
+        isOpen={deleteListDialogOpen}
+        onClose={() => {
+          setDeleteListDialogOpen(false);
+          setListToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteList}
+        listName={listToDelete?.title || ""}
+        cardCount={listToDelete?.tasks?.length || 0}
+        availableLists={columns.filter(col => col.id !== listToDelete?.id)}
+        isLoading={isListOperating}
+      />
     </div>
   );
 }

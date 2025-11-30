@@ -7,17 +7,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MessageSquare, Paperclip, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
-const KanbanCard = memo(({ 
-  task, 
-  columnId, 
-  isDragging, 
+const KanbanCard = memo(({
+  task,
+  columnId,
+  isDragging,
   currentUserRole,
-  onDragStart, 
-  onDragEnd, 
-  onEdit, 
-  onDelete, 
+  onDragStart,
+  onDragEnd,
+  onEdit,
+  onDelete,
   onClick,
-  getPriorityColor 
+  getPriorityColor
 }) => {
   const handleCardClick = (e) => {
     if (e.defaultPrevented) return;
@@ -26,12 +26,17 @@ const KanbanCard = memo(({
 
   return (
     <Card
-      className={`cursor-move hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200 bg-background group ${
-        isDragging ? 'opacity-50 scale-95' : ''
-      }`}
+      className={`cursor-move hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200 bg-background group ${isDragging ? 'opacity-50 scale-95' : ''
+        }`}
       draggable
-      onDragStart={() => onDragStart(task, columnId)}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => {
+        e.stopPropagation();
+        onDragStart(task, columnId);
+      }}
+      onDragEnd={(e) => {
+        e.stopPropagation();
+        onDragEnd();
+      }}
       onClick={handleCardClick}
     >
       <CardContent className="p-3 space-y-2.5">
