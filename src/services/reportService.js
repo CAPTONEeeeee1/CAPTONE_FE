@@ -1,8 +1,8 @@
 import api from "@/lib/api";
 
 const reportService = {
-  getGlobalReport: async () => {
-    const response = await api.get("/reports/global");
+  getUserDashboardReport: async () => {
+    const response = await api.get("/reports/user");
     return response;
   },
 };

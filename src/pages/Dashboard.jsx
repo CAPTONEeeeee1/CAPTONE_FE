@@ -41,7 +41,7 @@ export default function DashboardPage() {
                 setIsLoading(true);
                 const [workspacesResponse, reportResponse] = await Promise.all([
                     workspaceService.getAll(),
-                    reportService.getGlobalReport(),
+                    reportService.getUserDashboardReport(),
                 ]);
                 setWorkspaces((workspacesResponse.workspaces || []).slice(0, 3));
                 setDashboardData(reportResponse);
@@ -82,6 +82,15 @@ export default function DashboardPage() {
             ).toFixed(0)
             : 0;
 
+    const translateActivityAction = (action) => {
+        const actionMap = {
+            'board_created': 'đã tạo bảng',
+            'card_created': 'đã tạo thẻ',
+            'workspace_created': 'đã tạo không gian làm việc',
+            // Thêm các hành động khác ở đây nếu cần
+        };
+        return actionMap[action] || action.replace(/_/g, ' ');
+    };
 
     return (
         <div className="flex min-h-screen">
@@ -307,13 +316,9 @@ export default function DashboardPage() {
                                             <p className="text-sm">
                                                 <span className="font-medium">{activity.user.fullName}</span>{" "}
                                                 <span className="text-muted-foreground">
-                                                    {activity.action}
+                                                    {translateActivityAction(activity.action)}
                                                 </span>{" "}
-                                                {activity.workspace ? (
-                                                    <Link to={`/ws/${activity.workspace.id}/settings`} className="font-medium">{activity.details}</Link>
-                                                ) : (
-                                                    <span className="font-medium">{activity.details}</span>
-                                                )}
+                                                <span className="font-medium">{activity.entityName}</span>
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 {activity.workspace && (
