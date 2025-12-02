@@ -1,11 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
-import { DashboardHeader } from "@/components/layout/dashboardHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, TrendingUp, CheckCircle2, Clock, AlertCircle, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import {
     PieChart,
     Pie,
@@ -19,31 +14,107 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
+import { Download, TrendingUp, CheckCircle2, Clock, AlertCircle, ArrowLeft } from "lucide-react";
 
-const statusData = [
-    { name: "Hoàn thành", value: 45, color: "#10b981" },
-    { name: "Đang làm", value: 30, color: "#1A73E8" },
-    { name: "Trễ hạn", value: 15, color: "#ef4444" },
-    { name: "Chưa bắt đầu", value: 10, color: "#94a3b8" },
-];
+import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
+import { DashboardHeader } from "@/components/layout/dashboardHeader";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import reportService from "@/services/reportService";
 
-const memberData = [
-    { name: "Nguyễn Văn A", total: 24, completed: 20, percentage: 83 },
-    { name: "Trần Thị B", total: 18, completed: 16, percentage: 89 },
-    { name: "Lê Văn C", total: 22, completed: 15, percentage: 68 },
-    { name: "Phạm Thị D", total: 20, completed: 18, percentage: 90 },
-    { name: "Hoàng Văn E", total: 16, completed: 14, percentage: 88 },
-];
+const STATUS_COLORS = {
+    "To Do": "#94a3b8",
+    "In Progress": "#3b82f6",
+    "Done": "#10b981",
+    "Backlog": "#f97316",
+};
 
 export default function ReportDetailPage() {
     const { workspaceId } = useParams();
+    const [reportData, setReportData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock workspace data - trong thực tế sẽ fetch từ API
-    const workspace = {
-        id: workspaceId,
-        name: `Dự án ${workspaceId}`,
-        description: "Mô tả chi tiết dự án",
-    };
+    useEffect(() => {
+        const fetchReport = async () => {
+            try {
+                setIsLoading(true);
+                const data = await reportService.getWorkspaceReport(workspaceId);
+                setReportData(data);
+                setError(null);
+            } catch (err) {
+                const errorMessage = err.response?.data?.error || "Không thể tải báo cáo chi tiết.";
+                setError(errorMessage);
+                toast.error(errorMessage);
+                console.error("Error fetching workspace report:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchReport();
+    }, [workspaceId]);
+
+    const pieChartData = reportData?.cardsByStatus.map(item => ({
+        name: item.status,
+        value: item.count,
+        color: STATUS_COLORS[item.status] || '#cccccc'
+    })) || [];
+    
+    const barChartData = reportData?.topContributors.map(item => ({
+        name: item.user.fullName,
+        created: item.cardsCreated,
+    }));
+    
+    const memberPerformanceData = reportData?.topContributors.map(item => ({
+        name: item.user.fullName,
+        cardsCreated: item.cardsCreated,
+        // The API doesn't provide completed cards per user, so we'll just show created cards
+    }));
+    
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen">
+                <DashboardSidebar />
+                <div className="flex-1 ml-64">
+                    <DashboardHeader />
+                    <main className="p-6 space-y-6">
+                        <Skeleton className="h-10 w-1/2" />
+                        <div className="grid gap-4 md:grid-cols-4">
+                            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
+                        </div>
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <Skeleton className="h-80 w-full" />
+                            <Skeleton className="h-80 w-full" />
+                        </div>
+                        <Skeleton className="h-96 w-full" />
+                    </main>
+                </div>
+            </div>
+        );
+    }
+    
+    if (error) {
+        return (
+            <div className="flex min-h-screen">
+                <DashboardSidebar />
+                <div className="flex-1 ml-64">
+                    <DashboardHeader />
+                    <main className="p-6 flex flex-col items-center justify-center text-center">
+                        <AlertCircle className="h-16 w-16 text-destructive mb-4" />
+                        <h2 className="text-2xl font-semibold mb-2">Đã xảy ra lỗi</h2>
+                        <p className="text-muted-foreground">{error}</p>
+                        <Button asChild className="mt-6">
+                            <Link to="/reports">
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
+                            </Link>
+                        </Button>
+                    </main>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="flex min-h-screen">
@@ -62,7 +133,7 @@ export default function ReportDetailPage() {
                                     </Link>
                                 </Button>
                                 <div>
-                                    <h1 className="text-3xl font-bold">Báo cáo: {workspace.name}</h1>
+                                    <h1 className="text-3xl font-bold">Báo cáo: {reportData?.workspace.name}</h1>
                                     <p className="mt-1 text-muted-foreground">
                                         Theo dõi tiến độ và hiệu suất làm việc của team
                                     </p>
@@ -83,7 +154,7 @@ export default function ReportDetailPage() {
                                 </SelectContent>
                             </Select>
 
-                            <Button className="gap-2">
+                            <Button className="gap-2" disabled>
                                 <Download className="h-4 w-4" />
                                 Xuất báo cáo PDF
                             </Button>
@@ -98,9 +169,9 @@ export default function ReportDetailPage() {
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">100</div>
+                                <div className="text-3xl font-bold">{reportData.summary.totalCards}</div>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    <span className="text-green-600">+12%</span> so với tháng trước
+                                   trong workspace này
                                 </p>
                             </CardContent>
                         </Card>
@@ -111,9 +182,9 @@ export default function ReportDetailPage() {
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">45</div>
+                                <div className="text-3xl font-bold">{reportData.summary.completedCards}</div>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    <span className="text-green-600">45%</span> tỷ lệ hoàn thành
+                                    <span className="text-green-600">{reportData.summary.completionRate}%</span> tỷ lệ hoàn thành
                                 </p>
                             </CardContent>
                         </Card>
@@ -124,9 +195,9 @@ export default function ReportDetailPage() {
                                 <Clock className="h-4 w-4 text-primary" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">30</div>
+                                <div className="text-3xl font-bold">{reportData.summary.totalCards - reportData.summary.completedCards - reportData.summary.overdueCards}</div>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    <span className="text-primary">30%</span> đang trong tiến trình
+                                    công việc đang tiến hành
                                 </p>
                             </CardContent>
                         </Card>
@@ -137,9 +208,9 @@ export default function ReportDetailPage() {
                                 <AlertCircle className="h-4 w-4 text-destructive" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">15</div>
+                                <div className="text-3xl font-bold">{reportData.summary.overdueCards}</div>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    <span className="text-destructive">15%</span> cần xử lý gấp
+                                    <span className="text-destructive">{((reportData.summary.overdueCards / reportData.summary.totalCards) * 100 || 0).toFixed(0)}%</span> cần xử lý gấp
                                 </p>
                             </CardContent>
                         </Card>
@@ -157,7 +228,7 @@ export default function ReportDetailPage() {
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
-                                            data={statusData}
+                                            data={pieChartData}
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
@@ -166,7 +237,7 @@ export default function ReportDetailPage() {
                                             fill="#8884d8"
                                             dataKey="value"
                                         >
-                                            {statusData.map((entry, index) => (
+                                            {pieChartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
@@ -175,7 +246,7 @@ export default function ReportDetailPage() {
                                 </ResponsiveContainer>
 
                                 <div className="mt-4 grid grid-cols-2 gap-4">
-                                    {statusData.map((item) => (
+                                    {pieChartData.map((item) => (
                                         <div key={item.name} className="flex items-center gap-2">
                                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
                                             <span className="text-sm text-muted-foreground">
@@ -190,19 +261,18 @@ export default function ReportDetailPage() {
                         {/* Bar Chart */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Hiệu suất theo thành viên</CardTitle>
-                                <CardDescription>Tổng công việc và tỷ lệ hoàn thành</CardDescription>
+                                <CardTitle>Top người đóng góp</CardTitle>
+                                <CardDescription>Số lượng thẻ đã tạo bởi các thành viên</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={memberData}>
+                                    <BarChart data={barChartData}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                                         <YAxis />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar dataKey="total" fill="#1A73E8" name="Tổng công việc" />
-                                        <Bar dataKey="completed" fill="#10b981" name="Đã hoàn thành" />
+                                        <Bar dataKey="created" fill="#1A73E8" name="Thẻ đã tạo" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -221,44 +291,14 @@ export default function ReportDetailPage() {
                                     <thead>
                                         <tr className="border-b">
                                             <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Thành viên</th>
-                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Tổng công việc</th>
-                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Đã hoàn thành</th>
-                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Tỷ lệ hoàn thành</th>
-                                            <th className="pb-3 text-right text-sm font-medium text-muted-foreground">Đánh giá</th>
+                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Thẻ đã tạo</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {memberData.map((member) => (
+                                        {memberPerformanceData.map((member) => (
                                             <tr key={member.name} className="border-b last:border-0">
                                                 <td className="py-4 text-sm font-medium">{member.name}</td>
-                                                <td className="py-4 text-center text-sm">{member.total}</td>
-                                                <td className="py-4 text-center text-sm">{member.completed}</td>
-                                                <td className="py-4 text-center text-sm">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
-                                                            <div
-                                                                className="h-full bg-primary"
-                                                                style={{ width: `${member.percentage}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className="font-medium">{member.percentage}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 text-right text-sm">
-                                                    {member.percentage >= 85 ? (
-                                                        <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                            Xuất sắc
-                                                        </span>
-                                                    ) : member.percentage >= 70 ? (
-                                                        <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                            Tốt
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                                                            Cần cải thiện
-                                                        </span>
-                                                    )}
-                                                </td>
+                                                <td className="py-4 text-center text-sm">{member.cardsCreated}</td>
                                             </tr>
                                         ))}
                                     </tbody>

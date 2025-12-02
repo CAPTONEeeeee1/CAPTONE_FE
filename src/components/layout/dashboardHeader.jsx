@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Search, Moon, Sun } from "lucide-react";
 
+import SearchDialog from '@/components/kanban/SearchDialog';
+
 export function DashboardHeader() {
     const navigate = useNavigate();
     const [theme, setTheme] = useState(() => {
@@ -28,14 +30,16 @@ export function DashboardHeader() {
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
             {/* Ô tìm kiếm */}
             <div className="flex flex-1 items-center gap-4">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Tìm kiếm workspace, task..."
-                        className="pl-9"
-                    />
-                </div>
+                <SearchDialog>
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Tìm kiếm workspace, task... (Ctrl+K)"
+                            className="pl-9"
+                        />
+                    </div>
+                </SearchDialog>
             </div>
 
             {/* Cụm nút bên phải */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import boardService from "@/services/boardService";
 import workspaceService from "@/services/workspaceService";
@@ -31,9 +31,11 @@ import {
 export default function BoardPage() {
   const { id: workspaceId, boardId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [viewMode, setViewMode] = useState("kanban");
   const [board, setBoard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cardIdToOpen, setCardIdToOpen] = useState(null);
 
   // Filter states
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -46,6 +48,14 @@ export default function BoardPage() {
   const [boardMembers, setBoardMembers] = useState([]);
   const [boardLabels, setBoardLabels] = useState([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cardId = params.get('cardId');
+    if (cardId) {
+      setCardIdToOpen(cardId);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (boardId) {
@@ -366,6 +376,7 @@ export default function BoardPage() {
               selectedMember={selectedMember}
               selectedPriority={selectedPriority}
               selectedLabel={selectedLabel}
+              cardIdToOpen={cardIdToOpen}
             />
           )}
 

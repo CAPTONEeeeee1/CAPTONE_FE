@@ -21,7 +21,7 @@ import TaskFormDialog from "./kanban/TaskFormDialog";
 import { ListFormDialog, DeleteListDialog } from "./kanban/ListDialogs";
 
 
-export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority, selectedLabel }) {
+export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority, selectedLabel, cardIdToOpen }) {
   const [columns, setColumns] = useState([]);
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedList, setDraggedList] = useState(null);
@@ -70,6 +70,12 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
   const [listToDelete, setListToDelete] = useState(null);
   const [isListOperating, setIsListOperating] = useState(false);
 
+  useEffect(() => {
+    if (cardIdToOpen) {
+      openCardDetail(cardIdToOpen);
+    }
+  }, [cardIdToOpen]);
+  
   useEffect(() => {
     if (board && board.lists) {
       const transformedColumns = board.lists

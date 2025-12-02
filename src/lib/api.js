@@ -14,12 +14,23 @@ const processQueue = (error, token = null) => {
 const apiClient = {
 
   async request(endpoint, options = {}, isRetry = false) {
-    const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+    let url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
     const headers = {
       "Content-Type": "application/json",
       ...options.headers,
     };
+
+    // --- ADDED LOGIC FOR QUERY PARAMETERS ---
+    if (options.method === "GET" && options.params) {
+      const query = new URLSearchParams(options.params).toString();
+      if (query) {
+        url = `${url}?${query}`;
+      }
+      // Remove params from options so it's not passed to fetch directly (which doesn't use it for GET)
+      delete options.params; 
+    }
+    // --- END ADDED LOGIC ---
 
     const token = localStorage.getItem("token");
     if (token) headers["Authorization"] = `Bearer ${token}`;
