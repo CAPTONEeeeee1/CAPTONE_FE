@@ -1,0 +1,145 @@
+/* Global theme variables (sử dụng :global để CSS module vẫn đặt biến toàn cục) */
+:global(:root) {
+  --bg: #ffffff;
+  --card-bg: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: rgba(17,24,39,0.6);
+  --input-border: #ccc;
+  --muted: rgba(17,24,39,0.45);
+  --success-border: #cfeadf;
+  --error-color: #b00020;
+  --pay-grad-from: #0066ff;
+  --pay-grad-to: #00a3ff;
+}
+
+/* Hỗ trợ prefers-color-scheme và class body.dark */
+@media (prefers-color-scheme: dark) {
+  :global(:root) {
+    --bg: #0b0f13;
+    --card-bg: #0f1417;
+    --text-primary: rgba(255,255,255,0.92); /* tăng độ rõ để không mờ */
+    --text-secondary: rgba(255,255,255,0.62);
+    --input-border: rgba(255,255,255,0.12);
+    --muted: rgba(255,255,255,0.45);
+    --success-border: rgba(10,127,63,0.18);
+    --error-color: #ff6b6b;
+  }
+}
+:global(body.dark) {
+  --bg: #0b0f13;
+  --card-bg: #0f1417;
+  --text-primary: rgba(255,255,255,0.92);
+  --text-secondary: rgba(255,255,255,0.62);
+  --input-border: rgba(255,255,255,0.12);
+  --muted: rgba(255,255,255,0.45);
+  --success-border: rgba(10,127,63,0.18);
+  --error-color: #ff6b6b;
+}
+
+/* Tăng tương phản cho các thành phần quan trọng (đặc biệt ở dark mode) */
+:global(body.dark) {
+  /* điều chỉnh nhẹ các biến để chữ không bị quá mờ */
+  --text-primary: rgba(255,255,255,0.94);
+  --text-secondary: rgba(255,255,255,0.80);
+  --muted: rgba(255,255,255,0.66);
+}
+
+/* Force các card / panel hiển thị text chính rõ ràng */
+:global(.card),
+:global(.panel),
+:global(.feature-card),
+:global(.summary),
+:global(.price-box),
+:global(.payment-panel) {
+  color: var(--text-primary);
+}
+
+/* Tiêu đề trong card / panel (ví dụ: "Thành viên không giới hạn", "Thông tin thanh toán") */
+:global(.card .title),
+:global(.card h3),
+:global(.panel h3),
+:global(.feature-card .title),
+:global(.payment-panel h3),
+:global(.payment-info h3) {
+  color: var(--text-primary);
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Nội dung mô tả trong card (dùng màu secondary nhưng đủ rõ) */
+:global(.card .desc),
+:global(.card p),
+:global(.panel p),
+:global(.feature-card p),
+:global(.payment-panel p),
+:global(.payment-info p) {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+/* Nếu có class muted được dùng cho text mô tả, đảm bảo không quá mờ */
+:global(.muted) {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Placeholder input trong dark mode rõ hơn */
+:global(body.dark) ::placeholder {
+  color: rgba(255,255,255,0.55);
+}
+
+/* Nếu component có selector cụ thể khác (ví dụ .checkout .info-title), bạn có thể thêm selector đó ở đây để override */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+    color: var(--text-primary);
+    background: transparent;
+}
+.row {
+    display: flex;
+    gap: 8px;
+}
+.form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    color: var(--text-secondary); /* label hơi mờ so với text chính */
+}
+.form input {
+    padding: 8px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* nút thanh toán */
+.payButton {
+    background: linear-gradient(90deg, var(--pay-grad-from), var(--pay-grad-to));
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* trạng thái */
+.error { color: var(--error-color); }
+.success { color: #0a7f3f; padding: 12px; border: 1px solid var(--success-border); border-radius: 6px; }
+
+/* summary box */
+.summary {
+    border: 1px solid var(--input-border);
+    padding: 12px;
+    border-radius: 8px;
+    max-width: 320px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+.price { font-weight: 700; margin: 8px 0; color: var(--text-primary); }
+
+/* helper class cho text mờ hơn */
+.muted { color: var(--muted); }
