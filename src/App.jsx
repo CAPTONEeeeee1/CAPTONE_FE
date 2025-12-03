@@ -1,5 +1,5 @@
 import './App.css';
-import { Routes, Route, Link } from 'react-router-dom'; // Giữ Routes, Route, Link
+import { Routes, Route, Link } from 'react-router-dom';
 import React from 'react';
 
 // Public/Basic Imports
@@ -25,21 +25,20 @@ import ReportsPage from './pages/Report';
 import ReportDetailPage from './pages/ReportDetail';
 import SettingsPage from './pages/Setting';
 import CreateWorkspacePage from './pages/CreateWorkspace';
-import CreateBoardPage from './pages/pages/CreateBoard';
+import CreateBoardPage from './pages/CreateBoard';  // SỬA ĐÂY
 import EditBoardPage from './pages/EditBoard';
 import AcceptInvitationPage from './pages/AcceptInvitation';
-import Checkout from './pages/Checkout'; // TÍNH NĂNG MỚI (feature/payment)
+import Checkout from './pages/Checkout';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 
-// ===== ADMIN PAGES (Gộp các imports Admin) =====
+// ===== ADMIN PAGES =====
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
-import AdminBoardsPage from "./pages/admin/AdminBoardsPage"; 
-import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
-
+// import AdminBoardsPage from "./pages/admin/AdminBoardsPage"; 
+// import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 export default function App() { // Chỉ giữ lại export default này
   return (
@@ -55,8 +54,8 @@ export default function App() { // Chỉ giữ lại export default này
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="boards" element={<AdminBoardsPage />} />
-          <Route path="payments" element={<AdminPaymentsPage />} />
+          {/* <Route path="boards" element={<AdminBoardsPage />} /> */}
+          {/* <Route path="payments" element={<AdminPaymentsPage />} /> */}
         </Route>
 
         {/* 2. PUBLIC ROUTES */}
