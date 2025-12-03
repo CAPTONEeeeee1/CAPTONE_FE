@@ -1,0 +1,8 @@
+[33m11cbc9d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/payment[m[33m)[m HEAD@{0}: commit (merge): Fix merge conflict App.jsx
+[33m691a5ff[m[33m ([m[1;31morigin/feature/payment[m[33m)[m HEAD@{1}: checkout: moving from main to feature/payment
+[33m66f4ae8[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2}: pull origin main: Fast-forward
+[33m91fc0bf[m HEAD@{3}: checkout: moving from feature/payment to main
+[33m691a5ff[m[33m ([m[1;31morigin/feature/payment[m[33m)[m HEAD@{4}: commit: Add payment feature
+[33m193a584[m HEAD@{5}: commit: Add payment feature UI + logic
+[33m91fc0bf[m HEAD@{6}: checkout: moving from main to feature/payment
+[33m91fc0bf[m HEAD@{7}: clone: from https://github.com/CAPTONEeeeee1/CAPTONE_FE.git

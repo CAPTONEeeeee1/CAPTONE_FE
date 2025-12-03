@@ -10,6 +10,7 @@ import {
     Settings,
     Plus,
     LogOut,
+    Star,
 } from "lucide-react";
 import authService from "@/lib/authService";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ const navigation = [
     { name: "Workspaces", href: "/workspaces", icon: FolderKanban },
     { name: "Báo cáo", href: "/reports", icon: BarChart3 },
     { name: "Thông báo", href: "/notifications", icon: Bell },
+    { name: "Nâng cấp Premium", href: "/checkout", icon: Star },
     { name: "Hồ sơ", href: "/profile", icon: User },
     { name: "Cài đặt", href: "/settings", icon: Settings },
 ];
@@ -81,6 +83,8 @@ export function DashboardSidebar() {
                         );
                     })}
                 </nav>
+
+               
 
                 {/* Đăng xuất */}
                 <Button
