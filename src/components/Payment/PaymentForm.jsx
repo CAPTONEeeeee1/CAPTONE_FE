@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styles from './styles.module.css';
 import { processPayment } from '../../services/paymentService';
 
-export default function PaymentForm({ amountCents, amountLabel, onSuccess }) {
+export default function PaymentForm({ onSuccess }) {
   const [name, setName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [exp, setExp] = useState('');
@@ -22,7 +22,7 @@ export default function PaymentForm({ amountCents, amountLabel, onSuccess }) {
 
     setLoading(true);
     try {
-      await processPayment({ name, cardNumber, exp, cvc, amountCents });
+      await processPayment({ name, cardNumber, exp, cvc });
       setSuccess(true);
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -35,8 +35,6 @@ export default function PaymentForm({ amountCents, amountLabel, onSuccess }) {
   if (success) {
     return <div className={styles.success}>Thanh toán thành công. Cảm ơn bạn!</div>;
   }
-
-  const priceLabel = amountLabel ?? `${(amountCents/100).toFixed(2)}₫`;
 
   return (
     <form className={styles.form} onSubmit={submit}>
@@ -69,7 +67,7 @@ export default function PaymentForm({ amountCents, amountLabel, onSuccess }) {
       {error && <div className={styles.error}>{error}</div>}
 
       <button type="submit" className={styles.payButton} disabled={loading}>
-        {loading ? 'Đang xử lý...' : `Thanh toán — ${priceLabel}`}
+        {loading ? 'Đang xử lý...' : `Thanh toán`}
       </button>
     </form>
   );
