@@ -32,22 +32,6 @@ export default function HomePage() {
                                         Bắt đầu ngay
                                     </Button>
                                 </Link>
-                                <Link to="#demo">
-                                    <Button size="lg" variant="outline" className="text-base bg-transparent">
-                                        Xem demo
-                                    </Button>
-                                </Link>
-                            </div>
-
-                            <div className="flex items-center gap-8 pt-4">
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                                    <span className="text-sm text-muted-foreground">Miễn phí 14 ngày</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                                    <span className="text-sm text-muted-foreground">Không cần thẻ tín dụng</span>
-                                </div>
                             </div>
                         </div>
 

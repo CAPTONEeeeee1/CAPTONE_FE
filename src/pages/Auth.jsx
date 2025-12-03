@@ -37,6 +37,8 @@ export default function AuthPage() {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
 
     if (!registerForm.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
+    else if(!registerForm.fullName.includes(" ")) newErrors.fullName = "Vui lòng nhập có ít nhất một khoảng trắng";
+
     if (!registerForm.email.trim()) newErrors.email = "Vui lòng nhập email";
     else if (!isValidEmail(registerForm.email)) newErrors.email = "Email không hợp lệ";
 
