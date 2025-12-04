@@ -37,7 +37,8 @@ export default function AuthPage() {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
 
     if (!registerForm.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
-    else if(!registerForm.fullName.includes(" ")) newErrors.fullName = "Vui lòng nhập có ít nhất một khoảng trắng";
+    else if (!registerForm.fullName.includes(" ")) newErrors.fullName = "Vui lòng nhập có ít nhất một khoảng trắng";
+    else if (hasNumber.test(registerForm.fullName)) newErrors.fullName = "Họ và tên không được chứa số";
 
     if (!registerForm.email.trim()) newErrors.email = "Vui lòng nhập email";
     else if (!isValidEmail(registerForm.email)) newErrors.email = "Email không hợp lệ";
@@ -95,7 +96,6 @@ export default function AuthPage() {
     }
   };
 
-  // ✅ Sửa toàn bộ logic đăng nhập: phân biệt role
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!validateLoginForm()) return;

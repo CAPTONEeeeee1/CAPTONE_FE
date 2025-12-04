@@ -488,6 +488,7 @@ export default function WorkspacePage() {
                                         <div key={member.id} className="flex items-center justify-between py-2">
                                             <div className="flex items-center gap-3">
                                                 <Avatar>
+                                                    <AvatarImage src={member.user?.avatar} />
                                                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                                                         {member.user?.fullName?.charAt(0)?.toUpperCase() || "U"}
                                                     </AvatarFallback>
