@@ -107,9 +107,11 @@ export default function AuthPage() {
       const response = await authService.login(loginForm);
       const data = response?.data || response;
       const token = data?.accessToken || data?.token;
+      const refreshToken = data?.refreshToken || response?.refreshToken;
       const user = data?.user || data?.data?.user;
 
       if (token) localStorage.setItem("token", token);
+      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
       toast.success("Đăng nhập thành công!");
 
       if (user?.role === "ADMIN") {
