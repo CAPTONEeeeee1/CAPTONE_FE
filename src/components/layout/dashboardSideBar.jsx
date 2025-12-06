@@ -10,6 +10,7 @@ import {
     Settings,
     Plus,
     LogOut,
+    MessageSquare,
 } from "lucide-react";
 import authService from "@/lib/authService";
 import { toast } from "sonner";
@@ -28,7 +29,7 @@ const navigation = [
     { name: "Cài đặt", href: "/settings", icon: Settings },
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ workspace }) {
     const location = useLocation();
     const navigate = useNavigate();
     const pathname = location.pathname;
@@ -80,6 +81,20 @@ export function DashboardSidebar() {
                             </Link>
                         );
                     })}
+                    {workspace && workspace.plan === 'PREMIUM' && (
+                        <Link
+                            to={`/workspaces/${workspace.id}/chat`}
+                            className={cn(
+                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                pathname.includes('/chat')
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                        >
+                            <MessageSquare className="h-4 w-4" />
+                            Chat
+                        </Link>
+                    )}
                 </nav>
 
                 {/* Đăng xuất */}

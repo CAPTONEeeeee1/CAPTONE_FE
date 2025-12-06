@@ -33,8 +33,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut } from "lucide-react";
+import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function WorkspacePage() {
@@ -319,12 +320,26 @@ export default function WorkspacePage() {
 
     return (
         <div className="flex min-h-screen">
-            <DashboardSidebar />
+            <DashboardSidebar workspace={workspace} />
 
             <div className="flex-1 ml-64">
                 <DashboardHeader />
 
                 <main className="p-6 space-y-6">
+                    {workspace.plan === 'FREE' && (
+                        <Alert className="border-primary">
+                            <Rocket className="h-4 w-4" />
+                            <AlertTitle>Nâng cấp lên Premium</AlertTitle>
+                            <AlertDescription>
+                                <div className="flex items-center justify-between">
+                                    <p>Mở khóa không giới hạn board, thành viên và các tính năng cao cấp khác.</p>
+                                    <Button onClick={() => navigate('/upgrade', { state: { workspaceId: workspace.id } })}>
+                                        Nâng cấp ngay
+                                    </Button>
+                                </div>
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     {/* Workspace Header */}
                     <div className="flex items-start justify-between">
                         <div className="space-y-1">

@@ -1,6 +1,6 @@
 import './App.css'
-import { Routes, Route } from "react-router-dom";
-import React from 'react';
+import { Routes, Route, useLocation, matchPath } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
 import HomePage from './pages/Home';
 import AboutPage from './pages/About';
 import ContactPage from './pages/Contact';
@@ -24,6 +24,10 @@ import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPasswordPage'; 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
+import UpgradePage from './pages/Upgrade';
+import ChatWidget from './pages/ChatWidget';
+import PaymentStatusPage from './pages/PaymentStatus'; // Import PaymentStatusPage
+import workspaceService from './services/workspaceService'; // Import workspaceService
 
 // ===== ADMIN PAGES =====
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -32,6 +36,60 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 function App() {
+  const location = useLocation();
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
+  const [isWorkspacePremium, setIsWorkspacePremium] = useState(false);
+  const [loadingWorkspace, setLoadingWorkspace] = useState(true);
+
+  useEffect(() => {
+    let extractedWorkspaceId = null;
+    const workspacePathPatterns = [
+        '/workspaces/:id',
+        '/workspaces/:id/boards/new',
+        '/workspaces/:id/boards/:boardId/edit',
+        '/workspaces/:id/boards/:boardId',
+        '/reports/:workspaceId',
+    ];
+
+    for (const pattern of workspacePathPatterns) {
+        const match = matchPath(pattern, location.pathname);
+        if (match && match.params.id) { 
+            extractedWorkspaceId = match.params.id;
+            break;
+        } else if (match && match.params.workspaceId) { 
+            extractedWorkspaceId = match.params.workspaceId;
+            break;
+        }
+    }
+    setCurrentWorkspaceId(extractedWorkspaceId);
+    console.log("App.jsx: Extracted Workspace ID from URL:", extractedWorkspaceId, "Path:", location.pathname); // Added log
+  }, [location.pathname]);
+
+  useEffect(() => {
+    console.log("App.jsx: currentWorkspaceId changed, value:", currentWorkspaceId); // Added log
+    if (currentWorkspaceId) {
+      setLoadingWorkspace(true);
+      const fetchWorkspaceDetails = async () => {
+        console.log("App.jsx: Attempting to fetch workspace details for ID:", currentWorkspaceId); // Added log
+        try {
+          const response = await workspaceService.getById(currentWorkspaceId);
+          console.log("App.jsx: Workspace details fetched:", response); // Added log
+          setIsWorkspacePremium(response.workspace.plan === 'PREMIUM'); // Assuming 'plan' field and 'PREMIUM' value
+        } catch (error) {
+          console.error("App.jsx: Failed to fetch workspace details:", error);
+          setIsWorkspacePremium(false); // Assume not premium on error
+        } finally {
+          setLoadingWorkspace(false);
+        }
+      };
+      fetchWorkspaceDetails();
+    } else {
+      console.log("App.jsx: currentWorkspaceId is null or undefined, skipping fetch."); // Added log
+      setIsWorkspacePremium(false);
+      setLoadingWorkspace(false);
+    }
+  }, [currentWorkspaceId]);
+
   return (
     <>
       <Routes>
@@ -63,6 +121,14 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route
+            path="/payment-status"
+            element={
+                <PublicRoute>
+                    <PaymentStatusPage />
+                </PublicRoute>
+            }
+        />
 
         {/* Protected Routes */}
         <Route
@@ -169,7 +235,20 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+            path="/upgrade"
+            element={
+                <ProtectedRoute>
+                    <UpgradePage />
+                </ProtectedRoute>
+            }
+        />
       </Routes>
+      {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
+        <ProtectedRoute>
+            <ChatWidget workspaceId={currentWorkspaceId} />
+        </ProtectedRoute>
+      )}
     </>
   )
 }
