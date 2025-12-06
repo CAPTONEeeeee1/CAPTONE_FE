@@ -75,7 +75,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
       openCardDetail(cardIdToOpen);
     }
   }, [cardIdToOpen]);
-  
+
   useEffect(() => {
     if (board && board.lists) {
       const transformedColumns = board.lists
@@ -680,7 +680,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
 
       await cardService.delete(task.id);
 
-      toast.success("Xóa card thành công!");
+      toast.success(`Card "${task.title}" đã được chuyển vào thùng rác. Sẽ tự động xóa sau 15 ngày.`);
 
       setTaskToDelete(null);
     } catch (error) {

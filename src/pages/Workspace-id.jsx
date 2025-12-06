@@ -207,7 +207,7 @@ export default function WorkspacePage() {
             // Remove board from list
             setBoards(boards.filter(b => b.id !== boardToDelete.id));
 
-            toast.success(`Board "${boardToDelete.name}" đã được xóa thành công`);
+            toast.success(`Board "${boardToDelete.name}" đã được chuyển vào thùng rác. Sẽ tự động xóa sau 15 ngày.`);
         } catch (error) {
             console.error("Error deleting board:", error);
             toast.error(error.message || "Không thể xóa board. Vui lòng thử lại.");
@@ -572,12 +572,20 @@ export default function WorkspacePage() {
                             </div>
                             {/* Only owner and admin can create boards */}
                             {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
-                                <Button asChild>
-                                    <Link to={`/workspaces/${workspaceId}/boards/new`}>
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Tạo board mới
-                                    </Link>
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" asChild>
+                                        <Link to={`/workspaces/${workspaceId}/trash`}>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Thùng rác
+                                        </Link>
+                                    </Button>
+                                    <Button asChild>
+                                        <Link to={`/workspaces/${workspaceId}/boards/new`}>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Tạo board mới
+                                        </Link>
+                                    </Button>
+                                </div>
                             )}
                         </div>
 

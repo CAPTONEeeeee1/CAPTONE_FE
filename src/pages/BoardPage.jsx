@@ -25,7 +25,8 @@ import {
   List,
   ArrowLeft,
   AlertCircle,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 
 export default function BoardPage() {
@@ -253,6 +254,15 @@ export default function BoardPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Thùng rác */}
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/workspaces/${workspaceId}/trash`)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Thùng rác
+              </Button>
+
               {/* Bộ lọc */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
