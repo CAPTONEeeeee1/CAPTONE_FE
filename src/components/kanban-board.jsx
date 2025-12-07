@@ -1089,8 +1089,9 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa card</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa card "<span className="font-semibold text-foreground">{taskToDelete?.task?.title}</span>"?
-              Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn chuyển card "<span className="font-semibold text-foreground">{taskToDelete?.task?.title}</span>" vào thùng rác?
+              <br/><br/>
+              Hành động này sẽ chuyển card vào thùng rác, nơi bạn có thể khôi phục hoặc xóa vĩnh viễn sau đó.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

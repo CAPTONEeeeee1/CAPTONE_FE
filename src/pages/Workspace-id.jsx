@@ -724,11 +724,10 @@ export default function WorkspacePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Xóa board này?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa board <span className="font-semibold text-foreground">"{boardToDelete?.name}"</span>?
+                            Bạn có chắc chắn muốn chuyển board <span className="font-semibold text-foreground">"{boardToDelete?.name}"</span> vào thùng rác?
                             <br />
                             <br />
-                            Hành động này sẽ xóa vĩnh viễn board và tất cả dữ liệu bên trong bao gồm lists, cards, và comments.
-                            <span className="text-destructive font-semibold"> Không thể hoàn tác!</span>
+                            Bạn có thể khôi phục hoặc xóa vĩnh viễn board này trong vòng 15 ngày.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
