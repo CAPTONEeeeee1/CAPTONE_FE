@@ -333,7 +333,7 @@ export default function WorkspacePage() {
                             <AlertDescription>
                                 <div className="flex items-center justify-between">
                                     <p>Mở khóa không giới hạn board, thành viên và các tính năng cao cấp khác.</p>
-                                    <Button onClick={() => navigate('/upgrade', { state: { workspaceId: workspace.id } })}>
+                                    <Button onClick={() => navigate('/checkout', { state: { workspaceId: workspace.id } })}>
                                         Nâng cấp ngay
                                     </Button>
                                 </div>

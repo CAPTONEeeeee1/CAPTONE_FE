@@ -234,6 +234,11 @@ export default function DashboardPage() {
                                                         <CardTitle className="text-lg truncate">
                                                             {workspace.name}
                                                         </CardTitle>
+                                                        {workspace.plan === 'PREMIUM' && (
+                                                            <Badge className="text-xs flex items-center gap-1 flex-shrink-0 bg-yellow-500 text-white">
+                                                                Premium
+                                                            </Badge>
+                                                        )}
                                                         <Badge
                                                             variant={
                                                                 workspace.visibility === "private"

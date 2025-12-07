@@ -1,6 +1,8 @@
 import './App.css'
 import { Routes, Route, Link, useLocation, matchPath } from "react-router-dom"; // Kết hợp imports
 import React, { useState, useEffect } from 'react'; // Kết hợp imports
+import { Toaster } from 'sonner';
+
 
 // Public/Basic Imports
 import HomePage from './pages/Home';
@@ -44,6 +46,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 // import AdminBoardsPage from "./pages/admin/AdminBoardsPage"; 
 // import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
+
 
 export default function App() { 
   // THÊM LOGIC TỪ feature/fe-changes
@@ -103,6 +106,7 @@ export default function App() {
 
   return (
     <>
+      <Toaster richColors position="bottom-right" />
       {/* Thêm Nav bar từ nhánh feature/payment nếu bạn muốn hiển thị nó trên mọi trang */}
 
 

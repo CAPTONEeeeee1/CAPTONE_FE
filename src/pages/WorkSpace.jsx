@@ -107,7 +107,7 @@ export default function WorkspacesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
               {workspaces.map((workspace) => (
                 <Card key={workspace.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -120,6 +120,11 @@ export default function WorkspacesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-lg truncate">{workspace.name}</CardTitle>
+                          {workspace.plan === 'PREMIUM' && (
+                            <Badge className="text-xs flex items-center gap-1 flex-shrink-0 bg-yellow-500 text-white">
+                              Premium 
+                            </Badge>
+                          )}
                           <Badge
                             variant={workspace.visibility === "private" ? "secondary" : "outline"}
                             className="text-xs flex items-center gap-1 flex-shrink-0"

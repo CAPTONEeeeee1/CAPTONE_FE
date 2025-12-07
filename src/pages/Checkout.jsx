@@ -1,35 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardSidebar } from '@/components/layout/dashboardSideBar';
 import { DashboardHeader } from '@/components/layout/dashboardHeader';
-import PaymentForm from '@/components/Payment/PaymentForm';
 import PaymentSummary from '@/components/Payment/PaymentSummary';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { createVNPayPayment } from '@/lib/paymentService';
+import workspaceService from '@/services/workspaceService';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 // Định dạng tiền tệ VND (cho phần tóm tắt)
-const formatVND = (amountCents) => {
-  if (amountCents === 0) return 'Miễn Phí';
-  // Chuyển từ cent sang đơn vị đồng (VND)
-  const amountVND = amountCents / 1000; 
-  return `${amountVND.toLocaleString('vi-VN')} VND`;
+const formatVND = (amount) => {
+  if (amount === 0) return 'Miễn Phí';
+  return `${amount.toLocaleString('vi-VN')} VND`;
 };
 
 export default function Checkout() {
-  // CẬP NHẬT GIÁ VÀ NHÃN: 1 Tháng Free, 6 Tháng, 12 Tháng
+  const navigate = useNavigate();
+  const location = useLocation();
+  const initialWorkspaceId = location.state?.workspaceId;
+
+  const [workspaces, setWorkspaces] = useState([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(initialWorkspaceId);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const response = await workspaceService.getAll();
+        setWorkspaces(response.workspaces || []);
+        if (!initialWorkspaceId && response.workspaces?.length > 0) {
+          // If no workspace is passed in state, default to the first one
+          setSelectedWorkspaceId(response.workspaces[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching workspaces:", error);
+        toast.error("Không thể tải danh sách workspace.");
+      }
+    };
+    fetchWorkspaces();
+  }, [initialWorkspaceId]);
+
   const PLANS = {
-    free_trial: { id: 'free_trial', label: '1 THÁNG DÙNG THỬ', displayPrice: 'Miễn Phí', amountCents: 0, tag: 'MIỄN PHÍ', duration: 1 },
-    semiannual: { id: 'semiannual', label: '6 THÁNG', displayPrice: '649.000 VND', amountCents: 649000, tag: 'TIẾT KIỆM', duration: 6 },
-    annual: { id: 'annual', label: '12 THÁNG', displayPrice: '1.200.000 VND', amountCents: 1200000, tag: 'TỐT NHẤT', duration: 12 },
+    free_trial: { id: 'free_trial', label: '1 THÁNG DÙNG THỬ', displayPrice: '19.000 VND', amount: 19000, tag: 'DÙNG THỬ', duration: 1 },
+    semiannual: { id: 'semiannual', label: '6 THÁNG', displayPrice: '649.000 VND', amount: 649000, tag: 'TIẾT KIỆM', duration: 6 },
+    annual: { id: 'annual', label: '12 THÁNG', displayPrice: '1.200.000 VND', amount: 1200000, tag: 'TỐT NHẤT', duration: 12 },
   };
 
-  const [selectedPlan, setSelectedPlan] = useState(PLANS.free_trial); // Mặc định chọn Gói Dùng thử
-  const isTrialSelected = selectedPlan.id === 'free_trial';
+  const [selectedPlan, setSelectedPlan] = useState(PLANS.free_trial);
 
-  // Sắp xếp các gói theo thứ tự
   const sortedPlans = Object.values(PLANS);
-  // .sort((a, b) => a.duration - b.duration); // Sắp xếp theo thời gian
+
+  const handlePayment = async () => {
+    setIsProcessing(true);
+    try {
+      if (!selectedWorkspaceId) {
+        toast.error("Vui lòng chọn một workspace để nâng cấp.");
+        return;
+      }
+
+      const paymentData = {
+        amount: selectedPlan.amount,
+        orderInfo: `Thanh toán cho gói ${selectedPlan.label} của workspace ${selectedWorkspaceId}`,
+        workspaceId: selectedWorkspaceId,
+        plan: selectedPlan.id,
+      };
+
+      const response = await createVNPayPayment(paymentData);
+
+      if (response && response.paymentUrl) {
+        window.location.href = response.paymentUrl;
+      } else {
+        toast.error('Không thể tạo URL thanh toán. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo thanh toán:', error);
+      toast.error(error.message || 'Đã xảy ra lỗi khi xử lý thanh toán.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background text-foreground">
       <DashboardSidebar />
 
       <div className="flex-1 ml-64">
@@ -38,17 +93,16 @@ export default function Checkout() {
         <main className="p-6 space-y-6">
           <div>
             <h1 className="text-2xl font-bold">Nâng cấp lên Premium</h1>
-            {/* Các mô tả tính năng giữ nguyên */}
             <ul className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <li className="border rounded-lg p-4 bg-white shadow-sm">
+              <li className="border rounded-lg p-4 bg-card shadow-sm">
                 <h3 className="font-semibold">Thành viên không giới hạn</h3>
                 <p className="text-sm text-muted-foreground mt-2">Mời bao nhiêu thành viên tùy thích vào workspace của bạn.</p>
               </li>
-              <li className="border rounded-lg p-4 bg-white shadow-sm">
+              <li className="border rounded-lg p-4 bg-card shadow-sm">
                 <h3 className="font-semibold">Nhắn tin thảo luận</h3>
                 <p className="text-sm text-muted-foreground mt-2">Trò chuyện & thảo luận trực tiếp trong project để tăng hiệu suất.</p>
               </li>
-              <li className="border rounded-lg p-4 bg-white shadow-sm">
+              <li className="border rounded-lg p-4 bg-card shadow-sm">
                 <h3 className="font-semibold">Hỗ trợ & Giao diện nâng cao</h3>
                 <p className="text-sm text-muted-foreground mt-2">Giao diện đồng bộ, hỗ trợ ưu tiên và nhiều tính năng chuyên nghiệp.</p>
               </li>
@@ -57,19 +111,43 @@ export default function Checkout() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="workspace-select">Chọn workspace để nâng cấp</Label>
+                <Select
+                  value={selectedWorkspaceId}
+                  onValueChange={setSelectedWorkspaceId}
+                  id="workspace-select"
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn một workspace..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workspaces.map(ws => (
+                      <SelectItem key={ws.id} value={ws.id}>
+                        <div className="flex items-center">
+                          <span>{ws.name}</span>
+                          <Badge variant={ws.plan === 'PREMIUM' ? 'default' : 'secondary'} className="ml-2">
+                            {ws.plan === 'PREMIUM' ? 'Premium' : 'Normal'}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <h2 className="text-lg font-medium">Chọn gói</h2>
 
-              {/* SẮP XẾP VÀ HIỂN THỊ CÁC GÓI */}
               <div className="flex gap-4 flex-wrap">
                 {sortedPlans.map(p => (
                   <button
                     key={p.id}
                     onClick={() => setSelectedPlan(p)}
                     className={`
-                      px-5 py-3 rounded-lg border transition-all duration-200 w-full md:w-auto text-left
+                      px-5 py-3 rounded-lg border transition-all duration-200 w-full md:w-auto text-left relative
                       ${selectedPlan.id === p.id 
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg' 
-                        : 'bg-white text-slate-700 border-gray-300 hover:border-blue-400'}
+                        ? 'bg-primary text-primary-foreground border-primary shadow-lg' 
+                        : 'bg-card text-card-foreground border-border hover:border-primary'}
                     `}
                   >
                     <div className="font-semibold text-lg">{p.displayPrice}</div>
@@ -88,13 +166,11 @@ export default function Checkout() {
                 ))}
               </div>
 
-              {/* PAYMENT SUMMARY */}
-              <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+              <div className="mt-4 p-4 border rounded-lg bg-muted/50">
                 <h3 className="font-bold text-xl mb-3">Tóm Tắt Đơn Hàng</h3>
                 <PaymentSummary 
                   planName={selectedPlan.label} 
-                  amountCents={selectedPlan.amountCents} 
-                  displayAmount={formatVND(selectedPlan.amountCents)} // Dùng hàm formatVND mới
+                  displayAmount={formatVND(selectedPlan.amount)}
                   benefits={[
                     'Thành viên không giới hạn',
                     'Nhắn tin & thảo luận trong project',
@@ -104,37 +180,24 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* PHẦN THANH TOÁN / KÍCH HOẠT DÙNG THỬ */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-card p-6 rounded-lg shadow-sm">
               <h2 className="text-lg font-medium mb-4">
-                {isTrialSelected ? 'Kích hoạt Dùng thử Miễn phí' : 'Thông tin thanh toán'}
+                Thanh toán
               </h2>
               
-              {isTrialSelected ? (
-                // Nếu chọn dùng thử miễn phí, hiển thị nút kích hoạt
-                <button 
-                  className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                  onClick={() => {
-                    // TODO: Gọi API backend để kích hoạt 1 tháng dùng thử
-                    console.log('Activating 1-month free trial...');
-                    alert('Kích hoạt dùng thử thành công! Vui lòng làm mới trang.');
-                  }}
+              <div className="space-y-4">
+                <Button 
+                  onClick={handlePayment} 
+                  className="w-full" 
+                  disabled={isProcessing || !selectedWorkspaceId}
                 >
-                  Bắt đầu Dùng thử Miễn phí ngay
-                </button>
-              ) : (
-                // Nếu chọn gói trả phí, hiển thị PaymentForm
-                <PaymentForm 
-                  amountCents={selectedPlan.amountCents} 
-                  amountLabel={selectedPlan.displayPrice} 
-                  onSuccess={() => {
-                    console.log('Payment success -> mark user premium');
-                  }} 
-                />
-              )}
+                  {isProcessing ? 'Đang xử lý...' : 'Thanh toán qua VNPAY'}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">Bạn sẽ được chuyển hướng đến cổng thanh toán VNPAY để hoàn tất giao dịch.</p>
+              </div>
               
               <div className="mt-4 text-sm text-muted-foreground">
-                <p>Hoặc quay lại <Link to="/settings" className="text-blue-600 hover:underline">Cài đặt</Link></p>
+                <p>Hoặc quay lại <Link to="/workspaces" className="text-primary hover:underline">Workspace</Link></p>
               </div>
             </div>
           </div>
