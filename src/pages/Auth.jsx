@@ -123,7 +123,12 @@ export default function AuthPage() {
       setLoginForm({ email: "", password: "" });
     } catch (error) {
       console.error("Login error:", error);
-      if (error.status === 403 && error.data?.error?.includes("chưa được kích hoạt")) {
+      if (error.status === 403 && error.data?.code === 'ACCOUNT_SUSPENDED') {
+        toast.error("Tài khoản của bạn đã bị khóa.", {
+          description: "Vui lòng liên hệ với quản trị viên để biết thêm chi tiết.",
+        });
+      }
+      else if (error.status === 403 && error.data?.error?.includes("kích hoạt")) {
         setUnverifiedEmail(loginForm.email);
         setShowResendVerification(true);
         toast.error("Tài khoản chưa được kích hoạt.", {

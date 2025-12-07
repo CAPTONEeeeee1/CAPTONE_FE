@@ -104,9 +104,7 @@ export default function App() {
   return (
     <>
       {/* Thêm Nav bar từ nhánh feature/payment nếu bạn muốn hiển thị nó trên mọi trang */}
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/checkout">Nâng cấp Premium</Link>
-      </nav>
+
 
       <Routes>
 
