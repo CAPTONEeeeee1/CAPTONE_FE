@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -15,15 +16,23 @@ export function ListFormDialog({
     isLoading = false
 }) {
     const [name, setName] = useState(initialName);
+    const [isDone, setIsDone] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialName);
+        }
+    }, [isOpen, initialName]);
 
     const handleSubmit = () => {
         if (name.trim()) {
-            onSubmit(name.trim());
+            onSubmit(name.trim(), isDone);
         }
     };
 
     const handleClose = () => {
         setName("");
+        setIsDone(false);
         onClose();
     };
 
@@ -52,6 +61,12 @@ export function ListFormDialog({
                             autoFocus
                         />
                     </div>
+                    {!isEditMode && (
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="is-done" checked={isDone} onCheckedChange={setIsDone} />
+                            <Label htmlFor="is-done">Đánh dấu là danh sách "Hoàn thành"</Label>
+                        </div>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={handleClose} disabled={isLoading}>

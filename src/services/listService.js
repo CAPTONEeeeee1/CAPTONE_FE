@@ -1,8 +1,8 @@
 import apiClient from '@/lib/api';
 
 const listService = {
-    async create(boardId, name) {
-        return await apiClient.post('/lists', { boardId, name });
+    async create(boardId, name, isDone = false) {
+        return await apiClient.post('/lists', { boardId, name, isDone });
     },
 
     async getByBoardId(boardId) {

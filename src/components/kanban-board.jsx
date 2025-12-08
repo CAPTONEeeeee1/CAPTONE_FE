@@ -834,12 +834,12 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
     return 'border-border';
   }, []);
 
-  const handleCreateList = useCallback(async (name) => {
+  const handleCreateList = useCallback(async (name, isDone) => {
     if (!board?.id) return;
 
     try {
       setIsListOperating(true);
-      const response = await listService.create(board.id, name);
+      const response = await listService.create(board.id, name, isDone);
       const newList = response.list;
 
       const newColumn = {
@@ -859,8 +859,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
       }
     } catch (error) {
       console.error("Error creating list:", error);
-      toast.error(error.response?.data?.error || "Không thể tạo danh sách");
-    } finally {
+              toast.error(error.data?.error || error.message || "Không thể tạo danh sách");    } finally {
       setIsListOperating(false);
     }
   }, [board?.id, onUpdate]);

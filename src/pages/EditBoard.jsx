@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     ArrowLeft,
     Layout,
@@ -43,7 +44,7 @@ const colorOptions = [
 ];
 
 // Component for individual column item with edit/delete/reorder in EditBoard
-function ColumnItemEdit({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown, isOperating }) {
+function ColumnItemEdit({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown, onToggleDone, isOperating }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(column.name);
 
@@ -104,6 +105,17 @@ function ColumnItemEdit({ column, index, totalColumns, onEdit, onRemove, onMoveU
             ) : (
                 <>
                     <span className="flex-1 font-medium text-sm">{column.name}</span>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Checkbox
+                            id={`isDone-${column.id}`}
+                            checked={column.isDone}
+                            onCheckedChange={(checked) => onToggleDone(column.id, checked)}
+                            disabled={isOperating}
+                        />
+                        <Label htmlFor={`isDone-${column.id}`}>Là cột hoàn thành</Label>
+                    </div>
+
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Move Up/Down */}
                         <div className="flex flex-col">
@@ -185,19 +197,13 @@ export default function EditBoardPage() {
                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const currentMember = response.members?.find(m => m.user.id === currentUser.id);
 
-                if (!currentMember) {
-                    toast.error("Bạn không phải thành viên của workspace này");
-                    navigate(`/workspaces/${workspaceId}`);
-                    return;
+                if (!currentMember || !['owner', 'admin'].includes(currentMember.role)) {
+                    toast.error("Bạn không có quyền chỉnh sửa board này");
+                    navigate(`/workspaces/${workspaceId}/boards/${boardId}`);
+                    setHasPermission(false);
+                } else {
+                    setHasPermission(true);
                 }
-
-                if (!['owner', 'admin'].includes(currentMember.role)) {
-                    toast.error("Chỉ owner hoặc admin mới có thể chỉnh sửa board");
-                    navigate(`/workspaces/${workspaceId}`);
-                    return;
-                }
-
-                setHasPermission(true);
             } catch (error) {
                 console.error("Error checking permission:", error);
                 toast.error("Không thể kiểm tra quyền truy cập");
@@ -205,18 +211,16 @@ export default function EditBoardPage() {
             }
         };
 
-        if (workspaceId) {
+        if (workspaceId && boardId) {
             checkPermission();
         }
-    }, [workspaceId, navigate]);
+    }, [workspaceId, boardId, navigate]);
 
-    // Fetch board data
+    // Fetch board data when permission is confirmed
     useEffect(() => {
-        if (!hasPermission) return;
-
         const fetchBoard = async () => {
+            setIsFetching(true);
             try {
-                setIsFetching(true);
                 const response = await boardService.getById(boardId);
                 const board = response.board || response;
 
@@ -244,7 +248,7 @@ export default function EditBoardPage() {
             }
         };
 
-        if (boardId) {
+        if (hasPermission) {
             fetchBoard();
         }
     }, [boardId, hasPermission]);
@@ -296,6 +300,24 @@ export default function EditBoardPage() {
             toast.success("Đã cập nhật tên cột");
         } catch (error) {
             console.error("Error updating list:", error);
+            toast.error(error.response?.data?.error || "Không thể cập nhật cột");
+        } finally {
+            setIsListOperating(false);
+        }
+    };
+
+    const handleToggleDone = async (listId, isDone) => {
+        try {
+            setIsListOperating(true);
+            await listService.update(listId, { isDone });
+
+            setColumns(columns.map(col =>
+                col.id === listId ? { ...col, isDone } : col
+            ));
+
+            toast.success(`Đã cập nhật trạng thái cột`);
+        } catch (error) {
+            console.error("Error updating list 'isDone' status:", error);
             toast.error(error.response?.data?.error || "Không thể cập nhật cột");
         } finally {
             setIsListOperating(false);
@@ -584,6 +606,7 @@ export default function EditBoardPage() {
                                                             onRemove={handleRemoveColumn}
                                                             onMoveUp={() => handleReorderColumn(index, index - 1)}
                                                             onMoveDown={() => handleReorderColumn(index, index + 1)}
+                                                            onToggleDone={handleToggleDone}
                                                             isOperating={isListOperating}
                                                         />
                                                     ))
