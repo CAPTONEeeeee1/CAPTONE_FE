@@ -834,12 +834,12 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
     return 'border-border';
   }, []);
 
-  const handleCreateList = useCallback(async (name, isDone) => {
+  const handleCreateList = useCallback(async (name) => {
     if (!board?.id) return;
 
     try {
       setIsListOperating(true);
-      const response = await listService.create(board.id, name, isDone);
+      const response = await listService.create(board.id, name);
       const newList = response.list;
 
       const newColumn = {
@@ -859,7 +859,8 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
       }
     } catch (error) {
       console.error("Error creating list:", error);
-              toast.error(error.data?.error || error.message || "Không thể tạo danh sách");    } finally {
+      toast.error(error.response?.data?.error || "Không thể tạo danh sách");
+    } finally {
       setIsListOperating(false);
     }
   }, [board?.id, onUpdate]);
@@ -1088,9 +1089,8 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa card</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn chuyển card "<span className="font-semibold text-foreground">{taskToDelete?.task?.title}</span>" vào thùng rác?
-              <br/><br/>
-              Hành động này sẽ chuyển card vào thùng rác, nơi bạn có thể khôi phục hoặc xóa vĩnh viễn sau đó.
+              Bạn có chắc chắn muốn xóa card "<span className="font-semibold text-foreground">{taskToDelete?.task?.title}</span>"?
+              Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

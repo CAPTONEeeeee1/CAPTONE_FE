@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
     ArrowLeft,
     Layout,
@@ -63,13 +62,13 @@ const modeOptions = [
 ];
 
 const defaultColumns = [
-    { id: 1, name: "Todo", order: 0, isDone: false },
-    { id: 2, name: "In Progress", order: 1, isDone: false },
-    { id: 3, name: "Done", order: 2, isDone: true },
+    { id: 1, name: "Todo", order: 0 },
+    { id: 2, name: "In Progress", order: 1 },
+    { id: 3, name: "Done", order: 2 },
 ];
 
 // Component for individual column item with edit/delete/reorder
-function ColumnItem({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown, onToggleDone }) {
+function ColumnItem({ column, index, totalColumns, onEdit, onRemove, onMoveUp, onMoveDown }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(column.name);
 
@@ -127,17 +126,6 @@ function ColumnItem({ column, index, totalColumns, onEdit, onRemove, onMoveUp, o
             ) : (
                 <>
                     <span className="flex-1 font-medium text-sm">{column.name}</span>
-
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Checkbox
-                            id={`isDone-${column.id}`}
-                            checked={column.isDone}
-                            onCheckedChange={() => onToggleDone(column.id)}
-                        />
-                        <Label htmlFor={`isDone-${column.id}`}>Là cột hoàn thành</Label>
-                    </div>
-
-
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Move Up/Down */}
                         <div className="flex flex-col">
@@ -259,15 +247,12 @@ export default function CreateBoardPage() {
             id: Date.now(),
             name: newColumnName.trim(),
             order: columns.length,
-            isNew: true,
-            isDone: false
+            isNew: true
         };
         setColumns([...columns, newColumn]);
         setNewColumnName("");
         toast.success("Đã thêm cột mới");
-    };
-
-    const handleRemoveColumn = (id) => {
+    }; const handleRemoveColumn = (id) => {
         if (columns.length <= 1) {
             toast.error("Phải có ít nhất 1 cột");
             return;
@@ -295,9 +280,7 @@ export default function CreateBoardPage() {
             col.id === id ? { ...col, name: newName.trim() } : col
         ));
         toast.success("Đã cập nhật tên cột");
-    };
-
-    const handleReorderColumn = (fromIndex, toIndex) => {
+    }; const handleReorderColumn = (fromIndex, toIndex) => {
         if (fromIndex === toIndex) return;
 
         const newColumns = [...columns];
@@ -312,12 +295,6 @@ export default function CreateBoardPage() {
 
         setColumns(reorderedColumns);
         toast.success("Đã sắp xếp lại cột");
-    };
-
-    const handleToggleDone = (id) => {
-        setColumns(columns.map(col =>
-            col.id === id ? { ...col, isDone: !col.isDone } : col
-        ));
     };
 
     const handleSubmit = async (e) => {
@@ -353,7 +330,7 @@ export default function CreateBoardPage() {
                 boardData.lists = columns.map((col, index) => ({
                     name: col.name,
                     orderIdx: index,
-                    isDone: col.isDone
+                    isDone: col.name.toLowerCase().includes('done') || col.name.toLowerCase().includes('hoàn thành')
                 }));
             }
 
@@ -586,7 +563,6 @@ export default function CreateBoardPage() {
                                                         onRemove={handleRemoveColumn}
                                                         onMoveUp={() => handleReorderColumn(index, index - 1)}
                                                         onMoveDown={() => handleReorderColumn(index, index + 1)}
-                                                        onToggleDone={handleToggleDone}
                                                     />
                                                 ))}
                                             </div>

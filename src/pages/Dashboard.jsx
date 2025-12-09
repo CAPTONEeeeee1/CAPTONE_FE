@@ -1,4 +1,3 @@
-import authService from "@/lib/authService"; // Import authService
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -36,18 +35,8 @@ export default function DashboardPage() {
     const [dashboardData, setDashboardData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const isAuthenticated = authService.isAuthenticated(); // Read auth status
-
     useEffect(() => {
         const fetchData = async () => {
-            // Check authentication status
-            if (!isAuthenticated) {
-                setWorkspaces([]);
-                setDashboardData(null);
-                setIsLoading(false);
-                return; // Stop execution if not authenticated
-            }
-
             try {
                 setIsLoading(true);
                 const [workspacesResponse, reportResponse] = await Promise.all([
@@ -67,7 +56,7 @@ export default function DashboardPage() {
         };
 
         fetchData();
-    }, [isAuthenticated]); // Add isAuthenticated to the dependency array
+    }, []);
 
     const getWorkspaceColor = (id) => {
         const colors = [
@@ -245,11 +234,6 @@ export default function DashboardPage() {
                                                         <CardTitle className="text-lg truncate">
                                                             {workspace.name}
                                                         </CardTitle>
-                                                        {workspace.plan === 'PREMIUM' && (
-                                                            <Badge className="text-xs flex items-center gap-1 flex-shrink-0 bg-yellow-500 text-white">
-                                                                Premium
-                                                            </Badge>
-                                                        )}
                                                         <Badge
                                                             variant={
                                                                 workspace.visibility === "private"
@@ -300,60 +284,59 @@ export default function DashboardPage() {
                         )}
                     </div>
 
-                                        {/* Recent Activity */}
-                                        {authService.isAuthenticated() && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle>Hoạt động gần đây</CardTitle>
-                                                    <CardDescription>
-                                                        Cập nhật mới nhất từ các workspace của bạn
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="space-y-4">
-                                                        {isLoading ? ([...Array(3)].map((_, index) => (
-                                                            <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
-                                                                <Skeleton className="h-9 w-9 rounded-full" />
-                                                                <div className="flex-1 space-y-2">
-                                                                    <Skeleton className="h-4 w-3/4" />
-                                                                    <Skeleton className="h-3 w-1/2" />
-                                                                </div>
-                                                            </div>
-                                                        ))) : dashboardData?.recentActivities.map((activity) => (
-                                                            <div
-                                                                key={activity.id}
-                                                                className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
-                                                            >
-                                                                <Avatar className="h-9 w-9">
-                                                                    <AvatarFallback>
-                                                                        {activity.user.fullName.charAt(0)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div className="flex-1 space-y-1">
-                                                                    <p className="text-sm">
-                                                                        <span className="font-medium">{activity.user.fullName}</span>{" "}
-                                                                        <span className="text-muted-foreground">
-                                                                            {translateActivityAction(activity.action)}
-                                                                        </span>{" "}
-                                                                        <span className="font-medium">{activity.entityName}</span>
-                                                                    </p>
-                                                                    <div className="flex items-center gap-2">
-                                                                        {activity.workspace && (
-                                                                            <Badge variant="secondary" className="text-xs">
-                                                                                {activity.workspace.name}
-                                                                            </Badge>
-                                                                        )}
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: vi })}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        )}                </main>
+                    {/* Recent Activity */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Hoạt động gần đây</CardTitle>
+                            <CardDescription>
+                                Cập nhật mới nhất từ các workspace của bạn
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {isLoading ? ([...Array(3)].map((_, index) => (
+                                    <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                                        <Skeleton className="h-9 w-9 rounded-full" />
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton className="h-4 w-3/4" />
+                                            <Skeleton className="h-3 w-1/2" />
+                                        </div>
+                                    </div>
+                                ))) : dashboardData?.recentActivities.map((activity) => (
+                                    <div
+                                        key={activity.id}
+                                        className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
+                                    >
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarFallback>
+                                                {activity.user.fullName.charAt(0)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 space-y-1">
+                                            <p className="text-sm">
+                                                <span className="font-medium">{activity.user.fullName}</span>{" "}
+                                                <span className="text-muted-foreground">
+                                                    {translateActivityAction(activity.action)}
+                                                </span>{" "}
+                                                <span className="font-medium">{activity.entityName}</span>
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                {activity.workspace && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {activity.workspace.name}
+                                                    </Badge>
+                                                )}
+                                                <span className="text-xs text-muted-foreground">
+                                                    {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: vi })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </main>
             </div>
         </div>
     );

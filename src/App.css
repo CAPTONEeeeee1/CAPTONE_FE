@@ -148,3 +148,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Chat message word-break utility */
+@layer utilities {
+  .word-break {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+}

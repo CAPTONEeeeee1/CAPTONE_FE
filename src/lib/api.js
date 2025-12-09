@@ -47,14 +47,10 @@ const apiClient = {
 
       if (!response.ok) {
         if (response.status === 401 && !isRetry && endpoint !== "/auth/refresh") {
-          console.log(`[Auth Refresh] Received 401 for endpoint: ${endpoint}. Starting refresh process.`);
-
           if (isRefreshing) {
-            console.log("[Auth Refresh] Another request queued while refresh is in progress.");
             return new Promise((resolve, reject) => {
               failedQueue.push({ resolve, reject });
             }).then((token) => {
-              console.log("[Auth Refresh] Queued request is being retried with new token.");
               if (token) {
                 headers["Authorization"] = `Bearer ${token}`;
                 return this.request(endpoint, { ...options, headers }, true);
@@ -66,46 +62,37 @@ const apiClient = {
 
           try {
             const refreshToken = localStorage.getItem("refreshToken");
-            console.log("[Auth Refresh] Retrieved refreshToken from localStorage:", refreshToken ? 'Exists' : 'null');
-            if (!refreshToken) throw new Error("No refresh token in localStorage");
+            if (!refreshToken) throw new Error("No refresh token");
 
-            console.log("[Auth Refresh] Sending request to /auth/refresh...");
             const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ refreshToken }),
             });
-            console.log("[Auth Refresh] Refresh request finished. Status:", refreshResponse.status);
 
-            if (!refreshResponse.ok) {
-              const errorData = await refreshResponse.text();
-              throw new Error(`Failed to refresh token. Status: ${refreshResponse.status}. Body: ${errorData}`);
-            }
+            if (!refreshResponse.ok) throw new Error("Failed to refresh token");
 
             const refreshData = await refreshResponse.json();
             const newToken = refreshData.accessToken || refreshData.token;
             const newRefresh = refreshData.refreshToken;
 
-            if (!newToken) throw new Error("Invalid refresh response: new token is missing.");
-            console.log("[Auth Refresh] Successfully received new tokens.");
+            if (!newToken) throw new Error("Invalid refresh response");
 
             localStorage.setItem("token", newToken);
             if (newRefresh) localStorage.setItem("refreshToken", newRefresh);
 
-            console.log("[Auth Refresh] Processing queued requests.");
             processQueue(null, newToken);
             isRefreshing = false;
 
             headers["Authorization"] = `Bearer ${newToken}`;
             return this.request(endpoint, { ...options, headers }, true);
           } catch (refreshError) {
-            console.error("[Auth Refresh] CRITICAL: Token refresh failed:", refreshError);
+            console.error("Token refresh failed:", refreshError); // <-- Added this detailed log
             processQueue(refreshError, null);
             isRefreshing = false;
 
             localStorage.removeItem("token");
             localStorage.removeItem("refreshToken");
-            // Only redirect if not already on the auth page
             if (window.location.pathname !== "/auth") {
               window.location.href = "/auth";
             }

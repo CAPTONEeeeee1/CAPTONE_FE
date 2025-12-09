@@ -33,9 +33,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, Rocket } from "lucide-react";
+import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function WorkspacePage() {
@@ -320,26 +319,12 @@ export default function WorkspacePage() {
 
     return (
         <div className="flex min-h-screen">
-            <DashboardSidebar workspace={workspace} />
+            <DashboardSidebar />
 
             <div className="flex-1 ml-64">
                 <DashboardHeader />
 
                 <main className="p-6 space-y-6">
-                    {workspace.plan === 'FREE' && (
-                        <Alert className="border-primary">
-                            <Rocket className="h-4 w-4" />
-                            <AlertTitle>Nâng cấp lên Premium</AlertTitle>
-                            <AlertDescription>
-                                <div className="flex items-center justify-between">
-                                    <p>Mở khóa không giới hạn board, thành viên và các tính năng cao cấp khác.</p>
-                                    <Button onClick={() => navigate('/checkout', { state: { workspaceId: workspace.id } })}>
-                                        Nâng cấp ngay
-                                    </Button>
-                                </div>
-                            </AlertDescription>
-                        </Alert>
-                    )}
                     {/* Workspace Header */}
                     <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -363,6 +348,14 @@ export default function WorkspacePage() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Chat Button */}
+                            <Button variant="outline" asChild>
+                                <Link to={`/workspaces/${workspaceId}/chat`}>
+                                    <MessageCircle className="mr-2 h-4 w-4" />
+                                    Chat
+                                </Link>
+                            </Button>
+
                             {/* Settings Dropdown - Dành cho Owner và các vai trò khác */}
                             {currentUserRole && (
                                 <DropdownMenu>
@@ -724,10 +717,11 @@ export default function WorkspacePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Xóa board này?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Bạn có chắc chắn muốn chuyển board <span className="font-semibold text-foreground">"{boardToDelete?.name}"</span> vào thùng rác?
+                            Bạn có chắc chắn muốn xóa board <span className="font-semibold text-foreground">"{boardToDelete?.name}"</span>?
                             <br />
                             <br />
-                            Bạn có thể khôi phục hoặc xóa vĩnh viễn board này trong vòng 15 ngày.
+                            Hành động này sẽ xóa vĩnh viễn board và tất cả dữ liệu bên trong bao gồm lists, cards, và comments.
+                            <span className="text-destructive font-semibold"> Không thể hoàn tác!</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

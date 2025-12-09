@@ -35,7 +35,6 @@ export default function BoardPage() {
   const location = useLocation();
   const [viewMode, setViewMode] = useState("kanban");
   const [board, setBoard] = useState(null);
-  const [workspace, setWorkspace] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cardIdToOpen, setCardIdToOpen] = useState(null);
 
@@ -63,10 +62,7 @@ export default function BoardPage() {
     if (boardId) {
       fetchBoard();
     }
-    if (workspaceId) {
-        fetchWorkspace();
-    }
-  }, [boardId, workspaceId]);
+  }, [boardId]);
 
   useEffect(() => {
     if (board?.workspaceId) {
@@ -76,16 +72,6 @@ export default function BoardPage() {
       loadBoardLabels();
     }
   }, [board]);
-
-  const fetchWorkspace = async () => {
-      try {
-          const response = await workspaceService.getById(workspaceId);
-          setWorkspace(response.workspace || response);
-      } catch (error) {
-          console.error("Error fetching workspace:", error);
-          // Don't show a toast here as it might be redundant
-      }
-  };
 
   const fetchBoard = async () => {
     try {
@@ -167,7 +153,7 @@ export default function BoardPage() {
     return filters.join(', ');
   };
 
-  if (isLoading || !workspace) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen">
         <DashboardSidebar />
@@ -194,7 +180,7 @@ export default function BoardPage() {
   if (!board) {
     return (
       <div className="flex min-h-screen">
-        <DashboardSidebar workspace={workspace} />
+        <DashboardSidebar />
         <div className="flex-1 ml-64">
           <DashboardHeader />
           <main className="p-6">
@@ -218,7 +204,7 @@ export default function BoardPage() {
 
   return (
     <div className="flex min-h-screen">
-      <DashboardSidebar workspace={workspace} />
+      <DashboardSidebar />
 
       <div className="flex-1 ml-64">
         <DashboardHeader />

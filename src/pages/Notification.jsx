@@ -34,6 +34,7 @@ export default function NotificationsPage() {
 
     useEffect(() => {
         fetchInvitations();
+        fetchNotifications();
     }, []);
 
     useEffect(() => {
