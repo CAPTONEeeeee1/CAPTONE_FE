@@ -58,14 +58,14 @@ const KanbanColumn = memo(({
   return (
     <div
       key={column.id}
-      draggable={currentUserRole && ['owner', 'admin'].includes(currentUserRole)}
+      draggable={currentUserRole && ['owner', 'leader'].includes(currentUserRole)}
       onDragStart={handleListDragStart}
       onDragOver={handleListDragOver}
       onDrop={handleListDrop}
       onDragEnd={() => {
         // Reset any drag state if needed
       }}
-      className={`flex-shrink-0 w-80 transition-all duration-200 ease-in-out ${currentUserRole && ['owner', 'admin'].includes(currentUserRole) ? 'cursor-grab active:cursor-grabbing' : ''
+      className={`flex-shrink-0 w-80 transition-all duration-200 ease-in-out ${currentUserRole && ['owner', 'leader'].includes(currentUserRole) ? 'cursor-grab active:cursor-grabbing' : ''
         } ${isDraggingList ? 'opacity-40 scale-95 rotate-2' : ''
         } ${isDropTargetForList ? 'ring-4 ring-blue-400 ring-offset-4 rounded-xl scale-105 shadow-2xl' : ''
         } ${isDraggingCard ? 'ring-2 ring-primary/50 ring-offset-2 rounded-lg' : ''
@@ -81,7 +81,7 @@ const KanbanColumn = memo(({
         onDrop={() => onDrop(column.id)}
       >
         <CardHeader
-          className={`pb-4 bg-background/50 backdrop-blur-sm rounded-t-lg border-b ${currentUserRole && ['owner', 'admin'].includes(currentUserRole)
+          className={`pb-4 bg-background/50 backdrop-blur-sm rounded-t-lg border-b ${currentUserRole && ['owner', 'leader'].includes(currentUserRole)
               ? 'cursor-grab active:cursor-grabbing hover:bg-background/70'
               : ''
             }`}
@@ -89,7 +89,7 @@ const KanbanColumn = memo(({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+              {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
                 <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0" />
               )}
               <CardTitle className="text-base font-bold tracking-tight">{column.title}</CardTitle>
@@ -102,7 +102,7 @@ const KanbanColumn = memo(({
                 </Badge>
               )}
             </div>
-            {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+            {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
@@ -164,7 +164,7 @@ const KanbanColumn = memo(({
               ) : (
                 <>
                   <p className="text-sm">Chưa có task nào</p>
-                  {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                  {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
                     <Button
                       variant="ghost"
                       size="sm"

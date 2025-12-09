@@ -50,12 +50,16 @@ export default function DashboardPage() {
 
             try {
                 setIsLoading(true);
-                const [workspacesResponse, reportResponse] = await Promise.all([
+                const [workspacesResponse, userDashboardReportResponse, overviewReportResponse] = await Promise.all([
                     workspaceService.getAll(),
                     reportService.getUserDashboardReport(),
+                    reportService.getOverview(), // Fetch overview report for workspace-wide activities
                 ]);
                 setWorkspaces((workspacesResponse.workspaces || []).slice(0, 3));
-                setDashboardData(reportResponse);
+                setDashboardData({
+                    ...userDashboardReportResponse, // Keep user-specific summary data
+                    recentActivities: overviewReportResponse.recentActivities // Use workspace-wide recent activities from overview
+                });
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
                 toast.error("Không thể tải dữ liệu dashboard");
@@ -96,6 +100,18 @@ export default function DashboardPage() {
     const translateActivityAction = (action) => {
         const actionMap = {
             'board_created': 'đã tạo bảng',
+            'renamed_board': 'đã đổi tên bảng',
+            'deleted_board': 'đã xóa bảng',
+            'pinned_board': 'đã ghim bảng',
+            'unpinned_board': 'đã bỏ ghim bảng',
+            'added_comment': 'đã thêm bình luận',
+            'updated_comment': 'đã cập nhật bình luận',
+            'deleted_comment': 'đã xóa bình luận',
+            'updated_workspace_details': 'đã cập nhật chi tiết không gian làm việc',
+            'deleted_workspace': 'đã xóa không gian làm việc',
+            'removed_member': 'đã xóa thành viên',
+            'left_workspace': 'đã rời khỏi không gian làm việc',
+            'updated_member_role': 'đã cập nhật vai trò thành viên',
             'card_created': 'đã tạo thẻ',
             'workspace_created': 'đã tạo không gian làm việc',
             // Thêm các hành động khác ở đây nếu cần

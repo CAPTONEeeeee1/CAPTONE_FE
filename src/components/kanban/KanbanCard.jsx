@@ -65,7 +65,7 @@ const KanbanCard = memo(({
                   <Pencil className="h-3.5 w-3.5 mr-2" />
                   Chỉnh sửa
                 </DropdownMenuItem>
-                {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();

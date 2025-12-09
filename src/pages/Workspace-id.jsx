@@ -102,14 +102,19 @@ export default function WorkspacePage() {
         try {
             setIsLoadingMembers(true);
             const response = await workspaceService.getMembers(workspaceId);
-            setMembers(response.members || []);
+
+            // Convert all roles to lowercase for consistent handling in the frontend
+            const lowercaseMembers = (response.members || []).map(m => ({
+                ...m,
+                role: m.role.toLowerCase()
+            }));
+
+            setMembers(lowercaseMembers);
 
             const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const currentMember = response.members?.find(m => {
-                return m.user.id === currentUser.id;
-            });
+            const currentMember = lowercaseMembers.find(m => m.user.id === currentUser.id);
 
-            setCurrentUserRole(currentMember?.role || null);
+            setCurrentUserRole(currentMember?.role || null); // Role is now lowercase
         } catch (error) {
             setMembers([]);
             setCurrentUserRole(null);
@@ -184,7 +189,7 @@ export default function WorkspacePage() {
                     : m
             ));
 
-            toast.success(`Đã cập nhật vai trò của ${memberToChangeRole.user?.fullName} thành ${newRole === 'admin' ? 'Admin' :
+            toast.success(`Đã cập nhật vai trò của ${memberToChangeRole.user?.fullName} thành ${newRole === 'leader' ? 'Leader' :
                 newRole === 'member' ? 'Member' : 'Owner'
                 }`);
         } catch (error) {
@@ -372,7 +377,7 @@ export default function WorkspacePage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        {currentUserRole === 'owner' ? (
+                                        {['owner', 'leader'].includes(currentUserRole) ? (
                                             <DropdownMenuItem
                                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                                                 onClick={() => setShowDeleteDialog(true)}
@@ -393,71 +398,72 @@ export default function WorkspacePage() {
                                 </DropdownMenu>
                             )}
 
-                            {/* Invite Dialog */}
-                            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-                                <DialogTrigger asChild>
-                                    <Button>
-                                        <Mail className="mr-2 h-4 w-4" />
-                                        Mời thành viên
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Mời thành viên mới</DialogTitle>
-                                        <DialogDescription>
-                                            Gửi lời mời qua email để thêm thành viên vào workspace
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4 py-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="email">Email</Label>
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                placeholder="ten@example.com"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                disabled={isInviting}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !isInviting) {
-                                                        handleInvite();
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="role">Vai trò</Label>
-                                            <Select value={selectedRole} onValueChange={setSelectedRole} disabled={isInviting}>
-                                                <SelectTrigger id="role">
-                                                    <SelectValue placeholder="Chọn vai trò" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="admin">Leader - Trưởng nhóm</SelectItem>
-                                                    <SelectItem value="member">Member - Thành viên</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-xs text-muted-foreground">
-                                                {selectedRole === "admin" && "Leader có thể quản lý workspace và mời thành viên mới"}
-                                                {selectedRole === "member" && "Member có thể tạo và quản lý boards"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsInviteOpen(false)} disabled={isInviting}>
-                                            Hủy
+                            {['owner', 'leader'].includes(currentUserRole) && (
+                                <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button>
+                                            <Mail className="mr-2 h-4 w-4" />
+                                            Mời thành viên
                                         </Button>
-                                        <Button onClick={handleInvite} disabled={isInviting}>
-                                            {isInviting ? (
-                                                <>
-                                                    <span className="mr-2">Đang gửi...</span>
-                                                </>
-                                            ) : (
-                                                "Gửi lời mời"
-                                            )}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Mời thành viên mới</DialogTitle>
+                                            <DialogDescription>
+                                                Gửi lời mời qua email để thêm thành viên vào workspace
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="email">Email</Label>
+                                                <Input
+                                                    id="email"
+                                                    type="email"
+                                                    placeholder="ten@example.com"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    disabled={isInviting}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !isInviting) {
+                                                            handleInvite();
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="role">Vai trò</Label>
+                                                <Select value={selectedRole} onValueChange={setSelectedRole} disabled={isInviting}>
+                                                    <SelectTrigger id="role">
+                                                        <SelectValue placeholder="Chọn vai trò" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="leader">Leader - Trưởng nhóm</SelectItem>
+                                                        <SelectItem value="member">Member - Thành viên</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {selectedRole === "leader" && "Leader có thể quản lý workspace và mời thành viên mới"}
+                                                    {selectedRole === "member" && "Member có thể tạo và quản lý boards"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsInviteOpen(false)} disabled={isInviting}>
+                                                Hủy
+                                            </Button>
+                                            <Button onClick={handleInvite} disabled={isInviting}>
+                                                {isInviting ? (
+                                                    <>
+                                                        <span className="mr-2">Đang gửi...</span>
+                                                    </>
+                                                ) : (
+                                                    "Gửi lời mời"
+                                                )}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            )}
                         </div>
                     </div>
 
@@ -521,30 +527,23 @@ export default function WorkspacePage() {
 
                                             <div className="flex items-center gap-2">
                                                 <Badge
-                                                    variant={member.role === "owner" ? "default" : member.role === "admin" ? "secondary" : "outline"}
+                                                    variant={member.role === "owner" ? "default" : member.role === "leader" ? "secondary" : "outline"}
                                                 >
                                                     {member.role === "owner" && "Owner"}
-                                                    {member.role === "admin" && "Leader"}
+                                                    {member.role === "leader" && "Leader"}
                                                     {member.role === "member" && "Member"}
                                                     {member.role === "guest" && "Guest"}
                                                 </Badge>
                                                 {/* Only show menu if current user is owner/admin AND target is not owner AND target is not current user */}
                                                 {(() => {
                                                     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                                                    const isOwnerOrAdmin = currentUserRole && ['owner', 'admin'].includes(currentUserRole);
+                                                    const isOwnerOrLeader = currentUserRole && ['owner', 'leader'].includes(currentUserRole);
                                                     const targetIsNotOwner = member.role !== "owner";
                                                     const targetIsNotCurrentUser = member.user.id !== currentUser.id;
 
-                                                    console.log('Menu render check:', {
-                                                        currentUserRole,
-                                                        isOwnerOrAdmin,
-                                                        targetIsNotOwner,
-                                                        targetIsNotCurrentUser,
-                                                        memberUserId: member.user.id,
-                                                        currentUserId: currentUser.id
-                                                    });
 
-                                                    return isOwnerOrAdmin && targetIsNotOwner && targetIsNotCurrentUser ? (
+
+                                                    return isOwnerOrLeader && targetIsNotOwner && targetIsNotCurrentUser ? (
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button variant="ghost" size="icon">
@@ -585,8 +584,8 @@ export default function WorkspacePage() {
                                 <h2 className="text-2xl font-bold tracking-tight">Boards</h2>
                                 <p className="text-muted-foreground">Tổ chức công việc theo từng bảng</p>
                             </div>
-                            {/* Only owner and admin can create boards */}
-                            {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                            {/* Only owner and leader can create boards */}
+                            {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
                                 <div className="flex items-center gap-2">
                                     <Button variant="outline" asChild>
                                         <Link to={`/workspaces/${workspaceId}/trash`}>
@@ -622,7 +621,7 @@ export default function WorkspacePage() {
                                 <CardContent className="flex flex-col items-center justify-center py-16">
                                     <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
                                     <h3 className="text-lg font-semibold mb-2">Chưa có board nào</h3>
-                                    {currentUserRole && ['owner', 'admin'].includes(currentUserRole) ? (
+                                    {currentUserRole && ['owner', 'leader'].includes(currentUserRole) ? (
                                         <>
                                             <p className="text-muted-foreground text-center mb-6">
                                                 Tạo board đầu tiên để bắt đầu quản lý công việc
@@ -636,7 +635,7 @@ export default function WorkspacePage() {
                                         </>
                                     ) : (
                                         <p className="text-muted-foreground text-center">
-                                            Workspace này chưa có board nào. Chỉ owner hoặc admin mới có thể tạo board.
+                                            Workspace này chưa có board nào. Chỉ owner hoặc leader mới có thể tạo board.
                                         </p>
                                     )}
                                 </CardContent>
@@ -662,8 +661,8 @@ export default function WorkspacePage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Only show menu if current user is owner or admin */}
-                                                    {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                                                    {/* Only show menu if current user is owner or leader */}
+                                                    {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
                                                                 <Button variant="ghost" size="icon" className="flex-shrink-0">
@@ -786,7 +785,7 @@ export default function WorkspacePage() {
                                     <SelectValue placeholder="Chọn vai trò" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="admin">
+                                    <SelectItem value="leader">
                                         <div className="flex items-center gap-2">
                                             <Badge variant="secondary" className="text-xs">Leader</Badge>
                                             <span className="text-xs text-muted-foreground">Trưởng nhóm</span>
@@ -801,7 +800,7 @@ export default function WorkspacePage() {
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
-                                {newRole === "admin" && "Leader có thể quản lý workspace, mời và xóa thành viên"}
+                                {newRole === "leader" && "Leader có thể quản lý workspace, mời và xóa thành viên"}
                                 {newRole === "member" && "Member có thể tạo và quản lý boards"}
                             </p>
                         </div>

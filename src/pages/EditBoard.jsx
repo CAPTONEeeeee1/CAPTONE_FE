@@ -197,7 +197,9 @@ export default function EditBoardPage() {
                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const currentMember = response.members?.find(m => m.user.id === currentUser.id);
 
-                if (!currentMember || !['owner', 'admin'].includes(currentMember.role)) {
+                const userRole = currentMember?.role?.toLowerCase();
+
+                if (!userRole || !['owner', 'leader'].includes(userRole)) {
                     toast.error("Bạn không có quyền chỉnh sửa board này");
                     navigate(`/workspaces/${workspaceId}/boards/${boardId}`);
                     setHasPermission(false);

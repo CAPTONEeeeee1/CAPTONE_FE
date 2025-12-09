@@ -117,7 +117,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
       });
 
       if (currentMember) {
-        setCurrentUserRole(currentMember.role);
+        setCurrentUserRole(currentMember.role.toLowerCase());
       } else {
         setCurrentUserRole(null);
       }
@@ -1014,7 +1014,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
         />
       ))}
 
-      {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+      {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
         <div className="flex-shrink-0 w-80">
           <Card className="h-full bg-muted/20 border-2 border-dashed hover:border-primary/50 transition-all cursor-pointer" onClick={() => setIsAddListOpen(true)}>
             <CardContent className="flex items-center justify-center min-h-[200px]">
@@ -1416,7 +1416,7 @@ export function KanbanBoard({ board, onUpdate, selectedMember, selectedPriority,
                     <Pencil className="mr-2 h-4 w-4" />
                     Chỉnh sửa
                   </Button>
-                  {['owner', 'admin'].includes(currentUserRole) && (
+                  {['owner', 'leader'].includes(currentUserRole) && (
                     <Button
                       variant="destructive"
                       onClick={() => {

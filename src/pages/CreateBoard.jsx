@@ -221,8 +221,11 @@ export default function CreateBoardPage() {
                     return;
                 }
 
-                if (!['owner', 'admin'].includes(currentMember.role)) {
-                    toast.error("Chỉ owner hoặc admin mới có thể tạo board");
+                // Lấy vai trò và chuyển thành chữ thường để so sánh nhất quán
+                const userRole = currentMember.role.toLowerCase();
+
+                if (!['owner', 'leader'].includes(userRole)) {
+                    toast.error("Chỉ owner hoặc leader mới có thể tạo board");
                     navigate(`/workspaces/${workspaceId}`);
                     return;
                 }
