@@ -29,6 +29,7 @@ import {
     ChevronDown,
     Trash2,
 } from "lucide-react";
+import { dispatchActivityRefreshEvent } from "@/lib/utils"; // Import the event dispatcher
 
 const colorOptions = [
     { name: "Blue", value: "bg-blue-500", hex: "#3B82F6" },
@@ -363,6 +364,7 @@ export default function CreateBoardPage() {
             const response = await boardService.create(boardData);
 
             toast.success("Tạo board thành công!");
+            dispatchActivityRefreshEvent(); // Dispatch event to refresh dashboard activities
             navigate(`/workspaces/${workspaceId}/boards/${response.board.id}`);
         } catch (error) {
             console.error("Error creating board:", error);

@@ -36,7 +36,7 @@ import TrashPage from './pages/TrashPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 import UpgradePage from './pages/Upgrade'; 
-import ChatWidget from './pages/ChatWidget'; 
+ 
 import PaymentStatusPage from './pages/PaymentStatus'; 
 import workspaceService from './services/workspaceService'; 
 
@@ -169,10 +169,9 @@ export default function App() {
         <Route path="*" element={<PublicRoute><HomePage /></PublicRoute>} />
       </Routes>
 
-      {/* CHAT WIDGET LOGIC - TỪ feature/fe-changes */}
-      {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
+            {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
         <ProtectedRoute>
-            <ChatWidget workspaceId={currentWorkspaceId} />
+            
         </ProtectedRoute>
       )}
     </>

@@ -5,8 +5,8 @@ const reportService = {
     const response = await api.get("/reports/user");
     return response;
   },
-  getOverview: async () => {
-    const response = await api.get("/reports/overview");
+  getOverview: async (params) => {
+    const response = await api.get("/reports/overview", { params });
     return response;
   },
   getWorkspaceReport: async (workspaceId) => {

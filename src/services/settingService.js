@@ -21,7 +21,7 @@ export const getSettings = async () => {
  */
 export const updateSettings = async (settings) => {
   try {
-    const { data } = await apiClient.put('/settings', settings);
+    const data = await apiClient.put('/settings', settings);
     return data;
   } catch (error) {
     console.error('Failed to update notification settings:', error);

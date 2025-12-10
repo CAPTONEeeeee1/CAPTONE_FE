@@ -99,7 +99,7 @@ export default function WorkspacesPage() {
                   Tạo workspace đầu tiên để bắt đầu quản lý dự án của bạn
                 </p>
                 <Button asChild>
-                  <Link to="/workspaces/new">
+                  <Link to="/workspaces/create">
                     <Plus className="mr-2 h-4 w-4" />
                     Tạo workspace mới
                   </Link>

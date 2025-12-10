@@ -183,13 +183,17 @@ export default function NotificationsPage() {
 
     const getNotificationType = (type) => {
         const typeMap = {
-            'WORKSPACE_INVITATION': 'member',
-            'TASK_ASSIGNED': 'task',
-            'TASK_COMMENT': 'comment',
-            'TASK_DEADLINE': 'deadline',
-            'MENTION': 'comment'
+            'workspace_invitation': 'member',
+            'task_assigned': 'task',
+            'task_comment': 'comment',
+            'task_deadline': 'deadline',
+            'mention': 'comment',
+            'member_removed': 'member_action',
+            'invitation_accepted': 'invitation_accepted',
+            'invitation_rejected': 'invitation_rejected',
+            'member_added': 'member_action',
         };
-        return typeMap[type] || 'task';
+        return typeMap[type] || 'general';
     };
 
     const getTimeAgo = (dateString) => {
@@ -490,23 +494,25 @@ export default function NotificationsPage() {
                                                                         {!notif.isRead && (
                                                                             <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                                                                         )}
-                                                                        <Badge
-                                                                            variant={
-                                                                                notifType === 'task_assigned' ? 'default' :
-                                                                                    notifType === 'workspace_invitation' ? 'secondary' :
-                                                                                        notifType === 'invitation_accepted' ? 'success' :
-                                                                                            notifType === 'invitation_rejected' ? 'destructive' :
-                                                                                                'outline'
-                                                                            }
-                                                                            className="text-xs"
-                                                                        >
-                                                                            {notifType === 'task_assigned' ? 'Giao việc' :
-                                                                                notifType === 'workspace_invitation' ? 'Lời mời' :
-                                                                                    notifType === 'invitation_accepted' ? 'Đã chấp nhận' :
-                                                                                        notifType === 'invitation_rejected' ? 'Đã từ chối' :
-                                                                                            notif.type}
-                                                                        </Badge>
-                                                                    </div>
+                                                                                                                                                 <Badge
+                                                                                                                                                     variant={
+                                                                                                                                                         notifType === 'task' ? 'default' :
+                                                                                                                                                             ['member', 'member_action'].includes(notifType) ? 'secondary' :
+                                                                                                                                                                 notifType === 'invitation_accepted' ? 'success' :
+                                                                                                                                                                     notifType === 'invitation_rejected' ? 'destructive' :
+                                                                                                                                                                         'outline'
+                                                                                                                                                     }
+                                                                                                                                                     className="text-xs"
+                                                                                                                                                 >
+                                                                                                                                                     {notifType === 'task' ? 'Nhiệm vụ' :
+                                                                                                                                                         notifType === 'member' ? 'Thành viên' :
+                                                                                                                                                             notifType === 'member_action' ? 'Hoạt động thành viên' :
+                                                                                                                                                                 notifType === 'invitation_accepted' ? 'Lời mời đã chấp nhận' :
+                                                                                                                                                                     notifType === 'invitation_rejected' ? 'Lời mời đã từ chối' :
+                                                                                                                                                                         notifType === 'comment' ? 'Bình luận' :
+                                                                                                                                                                             notifType === 'deadline' ? 'Hạn chót' :
+                                                                                                                                                                                 'Thông báo chung'}
+                                                                                                                                                 </Badge>                                                                    </div>
                                                                     {notif.sender && (
                                                                         <p className="text-xs text-muted-foreground mt-1">
                                                                             Từ: {notif.sender.fullName || notif.sender.email}

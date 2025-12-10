@@ -30,48 +30,100 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { subscribeToActivityRefreshEvent, unsubscribeFromActivityRefreshEvent } from "@/lib/utils"; // Import event utilities
 
 export default function DashboardPage() {
     const [workspaces, setWorkspaces] = useState([]);
     const [dashboardData, setDashboardData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // New states for recent activities pagination
+    const [recentActivities, setRecentActivities] = useState([]);
+    const [activityPage, setActivityPage] = useState(1);
+    const [activityLimit] = useState(10); // Load 10 activities per click, fixed limit
+    const [hasMoreActivities, setHasMoreActivities] = useState(true);
+    const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0); // New state to trigger activity refresh
+
+
     const isAuthenticated = authService.isAuthenticated(); // Read auth status
+
+    // Function to fetch activities
+    const fetchActivities = async (page, limit, append = false) => {
+        try {
+            if (append) setIsLoadingMoreActivities(true);
+            const response = await reportService.getOverview({ page, limit });
+            const newActivities = response.recentActivities || [];
+
+            setRecentActivities(prevActivities =>
+                append ? [...prevActivities, ...newActivities] : newActivities
+            );
+            setHasMoreActivities(response.pagination.hasMore);
+            setActivityPage(page);
+            return response; // Return response for initial data fetch
+        } catch (error) {
+            console.error("Error fetching activities:", error);
+            toast.error("Không thể tải hoạt động gần đây");
+            return null;
+        } finally {
+            if (append) setIsLoadingMoreActivities(false);
+        }
+    };
+
 
     useEffect(() => {
         const fetchData = async () => {
-            // Check authentication status
             if (!isAuthenticated) {
                 setWorkspaces([]);
                 setDashboardData(null);
+                setRecentActivities([]); // Clear activities on logout
                 setIsLoading(false);
-                return; // Stop execution if not authenticated
+                return;
             }
 
             try {
                 setIsLoading(true);
-                const [workspacesResponse, userDashboardReportResponse, overviewReportResponse] = await Promise.all([
+                // Fetch initial activities (page 1, limit 10)
+                const [workspacesResponse, userDashboardReportResponse, initialActivitiesResponse] = await Promise.all([
                     workspaceService.getAll(),
                     reportService.getUserDashboardReport(),
-                    reportService.getOverview(), // Fetch overview report for workspace-wide activities
+                    fetchActivities(1, activityLimit), // Use fetchActivities for initial load
                 ]);
+
                 setWorkspaces((workspacesResponse.workspaces || []).slice(0, 3));
                 setDashboardData({
-                    ...userDashboardReportResponse, // Keep user-specific summary data
-                    recentActivities: overviewReportResponse.recentActivities // Use workspace-wide recent activities from overview
+                    ...userDashboardReportResponse,
+                    // initialActivitiesResponse already updates recentActivities state
                 });
+
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
                 toast.error("Không thể tải dữ liệu dashboard");
                 setWorkspaces([]);
                 setDashboardData(null);
+                setRecentActivities([]);
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchData();
-    }, [isAuthenticated]); // Add isAuthenticated to the dependency array
+    }, [isAuthenticated, activityLimit, refreshKey]); // Add refreshKey to dependencies
+
+    const handleRefreshActivities = () => {
+        setRecentActivities([]); // Clear current activities
+        setActivityPage(1); // Reset page to 1
+        setHasMoreActivities(true); // Assume there are more
+        setRefreshKey(prev => prev + 1); // Trigger useEffect
+    };
+
+    // New useEffect for event subscription
+    useEffect(() => {
+        subscribeToActivityRefreshEvent(handleRefreshActivities);
+        return () => {
+            unsubscribeFromActivityRefreshEvent(handleRefreshActivities);
+        };
+    }, []); // Empty dependency array means this runs once on mount and unmount
 
     const getWorkspaceColor = (id) => {
         const colors = [
@@ -99,7 +151,7 @@ export default function DashboardPage() {
 
     const translateActivityAction = (action) => {
         const actionMap = {
-            'board_created': 'đã tạo bảng',
+            'board_created': 'tạo bảng',
             'renamed_board': 'đã đổi tên bảng',
             'deleted_board': 'đã xóa bảng',
             'pinned_board': 'đã ghim bảng',
@@ -113,10 +165,17 @@ export default function DashboardPage() {
             'left_workspace': 'đã rời khỏi không gian làm việc',
             'updated_member_role': 'đã cập nhật vai trò thành viên',
             'card_created': 'đã tạo thẻ',
+            'created_board': 'đã tạo bảng',
             'workspace_created': 'đã tạo không gian làm việc',
             // Thêm các hành động khác ở đây nếu cần
         };
         return actionMap[action] || action.replace(/_/g, ' ');
+    };
+
+    const handleLoadMoreActivities = () => {
+        if (!isLoadingMoreActivities && hasMoreActivities) {
+            fetchActivities(activityPage + 1, activityLimit, true);
+        }
     };
 
     return (
@@ -327,7 +386,7 @@ export default function DashboardPage() {
                                                 </CardHeader>
                                                 <CardContent>
                                                     <div className="space-y-4">
-                                                        {isLoading ? ([...Array(3)].map((_, index) => (
+                                                        {isLoading && recentActivities.length === 0 ? ([...Array(3)].map((_, index) => (
                                                             <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
                                                                 <Skeleton className="h-9 w-9 rounded-full" />
                                                                 <div className="flex-1 space-y-2">
@@ -335,19 +394,19 @@ export default function DashboardPage() {
                                                                     <Skeleton className="h-3 w-1/2" />
                                                                 </div>
                                                             </div>
-                                                        ))) : dashboardData?.recentActivities.map((activity) => (
+                                                        ))) : recentActivities.length > 0 ? recentActivities.map((activity) => (
                                                             <div
                                                                 key={activity.id}
                                                                 className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
                                                             >
                                                                 <Avatar className="h-9 w-9">
                                                                     <AvatarFallback>
-                                                                        {activity.user.fullName.charAt(0)}
+                                                                        {activity.user?.fullName?.charAt(0) || activity.user?.email?.charAt(0) || 'U'}
                                                                     </AvatarFallback>
                                                                 </Avatar>
                                                                 <div className="flex-1 space-y-1">
                                                                     <p className="text-sm">
-                                                                        <span className="font-medium">{activity.user.fullName}</span>{" "}
+                                                                        <span className="font-medium">{activity.user?.fullName || activity.user?.email || 'Unknown User'}</span>{" "}
                                                                         <span className="text-muted-foreground">
                                                                             {translateActivityAction(activity.action)}
                                                                         </span>{" "}
@@ -365,8 +424,22 @@ export default function DashboardPage() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        ))}
+                                                        )) : (
+                                                            <div className="text-center text-muted-foreground py-8">Không có hoạt động gần đây</div>
+                                                        )}
                                                     </div>
+                                                    {/* Load More Button */}
+                                                    {hasMoreActivities && (
+                                                        <div className="text-center mt-6">
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={handleLoadMoreActivities}
+                                                                disabled={isLoadingMoreActivities}
+                                                            >
+                                                                {isLoadingMoreActivities ? "Đang tải..." : "Xem thêm"}
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         )}                </main>

@@ -37,6 +37,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
+import { dispatchActivityRefreshEvent } from "@/lib/utils"; // Import the event dispatcher
 
 export default function WorkspacePage() {
     const { id: workspaceId } = useParams();
@@ -214,6 +215,7 @@ export default function WorkspacePage() {
             setBoards(boards.filter(b => b.id !== boardToDelete.id));
 
             toast.success(`Board "${boardToDelete.name}" đã được chuyển vào thùng rác. Sẽ tự động xóa sau 15 ngày.`);
+            dispatchActivityRefreshEvent(); // Dispatch event to refresh dashboard activities
         } catch (error) {
             console.error("Error deleting board:", error);
             toast.error(error.message || "Không thể xóa board. Vui lòng thử lại.");
@@ -234,6 +236,7 @@ export default function WorkspacePage() {
             setTimeout(() => {
                 navigate('/workspaces');
             }, 1000);
+            dispatchActivityRefreshEvent(); // Dispatch event to refresh dashboard activities
         } catch (error) {
             console.error("Error deleting workspace:", error);
             toast.error(error.data?.error || "Không thể xóa workspace.");
@@ -254,6 +257,7 @@ export default function WorkspacePage() {
             setTimeout(() => {
                 navigate('/workspaces');
             }, 1000);
+            dispatchActivityRefreshEvent(); // Dispatch event to refresh dashboard activities
         } catch (error) {
             console.error("Error leaving workspace:", error);
             const errorMessage = error.data?.error || error.message || "Không thể rời khỏi workspace";
