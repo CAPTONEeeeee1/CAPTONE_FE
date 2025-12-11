@@ -16,7 +16,8 @@ import {
     AlertCircle,
     Clock,
     ArrowLeft,
-    X
+    X,
+    MessageCircle
 } from 'lucide-react';
 
 function TrashPage() {
@@ -198,9 +199,19 @@ function TrashPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                            <Clock className="w-4 h-4 text-amber-600" />
-                            <span className="text-sm font-medium text-amber-800">Tự động xóa sau 15 ngày</span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate(`/workspaces/${workspaceId}/chat`)}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg transition-all hover:scale-105 shadow-sm"
+                                title="Mở chat workspace"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                <span>Chat</span>
+                            </button>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                                <Clock className="w-4 h-4 text-amber-600" />
+                                <span className="text-sm font-medium text-amber-800">Tự động xóa sau 15 ngày</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -30,15 +30,16 @@ import CreateWorkspacePage from './pages/CreateWorkspace';
 import CreateBoardPage from './pages/CreateBoard';
 import EditBoardPage from './pages/EditBoard';
 import AcceptInvitationPage from './pages/AcceptInvitation';
-import Checkout from './pages/Checkout'; 
-import TrashPage from './pages/TrashPage'; 
+import Checkout from './pages/Checkout';
+import TrashPage from './pages/TrashPage';
+import ChatPage from './pages/ChatPage';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
-import UpgradePage from './pages/Upgrade'; 
- 
-import PaymentStatusPage from './pages/PaymentStatus'; 
-import workspaceService from './services/workspaceService'; 
+import UpgradePage from './pages/Upgrade';
+
+import PaymentStatusPage from './pages/PaymentStatus';
+import workspaceService from './services/workspaceService';
 
 // ===== ADMIN PAGES =====
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -48,7 +49,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 // import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 
-export default function App() { 
+export default function App() {
   // THÊM LOGIC TỪ feature/fe-changes
   const location = useLocation();
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
@@ -58,36 +59,36 @@ export default function App() {
   useEffect(() => {
     let extractedWorkspaceId = null;
     const workspacePathPatterns = [
-        '/workspaces/:id',
-        '/workspaces/:id/boards/new',
-        '/workspaces/:id/boards/:boardId/edit',
-        '/workspaces/:id/boards/:boardId',
-        '/reports/:workspaceId',
+      '/workspaces/:id',
+      '/workspaces/:id/boards/new',
+      '/workspaces/:id/boards/:boardId/edit',
+      '/workspaces/:id/boards/:boardId',
+      '/reports/:workspaceId',
     ];
 
     for (const pattern of workspacePathPatterns) {
-        const match = matchPath(pattern, location.pathname);
-        if (match && match.params.id) { 
-            extractedWorkspaceId = match.params.id;
-            break;
-        } else if (match && match.params.workspaceId) { 
-            extractedWorkspaceId = match.params.workspaceId;
-            break;
-        }
+      const match = matchPath(pattern, location.pathname);
+      if (match && match.params.id) {
+        extractedWorkspaceId = match.params.id;
+        break;
+      } else if (match && match.params.workspaceId) {
+        extractedWorkspaceId = match.params.workspaceId;
+        break;
+      }
     }
     setCurrentWorkspaceId(extractedWorkspaceId);
-    console.log("App.jsx: Extracted Workspace ID from URL:", extractedWorkspaceId, "Path:", location.pathname); 
+    console.log("App.jsx: Extracted Workspace ID from URL:", extractedWorkspaceId, "Path:", location.pathname);
   }, [location.pathname]);
 
   useEffect(() => {
-    console.log("App.jsx: currentWorkspaceId changed, value:", currentWorkspaceId); 
+    console.log("App.jsx: currentWorkspaceId changed, value:", currentWorkspaceId);
     if (currentWorkspaceId) {
       setLoadingWorkspace(true);
       const fetchWorkspaceDetails = async () => {
-        console.log("App.jsx: Attempting to fetch workspace details for ID:", currentWorkspaceId); 
+        console.log("App.jsx: Attempting to fetch workspace details for ID:", currentWorkspaceId);
         try {
           const response = await workspaceService.getById(currentWorkspaceId);
-          console.log("App.jsx: Workspace details fetched:", response); 
+          console.log("App.jsx: Workspace details fetched:", response);
           setIsWorkspacePremium(response.workspace.plan === 'PREMIUM'); // Assuming 'plan' field and 'PREMIUM' value
         } catch (error) {
           console.error("App.jsx: Failed to fetch workspace details:", error);
@@ -98,7 +99,7 @@ export default function App() {
       };
       fetchWorkspaceDetails();
     } else {
-      console.log("App.jsx: currentWorkspaceId is null or undefined, skipping fetch."); 
+      console.log("App.jsx: currentWorkspaceId is null or undefined, skipping fetch.");
       setIsWorkspacePremium(false);
       setLoadingWorkspace(false);
     }
@@ -132,19 +133,19 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route
-            path="/payment-status"
-            element={
-                <PublicRoute>
-                    <PaymentStatusPage />
-                </PublicRoute>
-            }
+          path="/payment-status"
+          element={
+            <PublicRoute>
+              <PaymentStatusPage />
+            </PublicRoute>
+          }
         />
 
         {/* 3. PROTECTED ROUTES - KẾT HỢP TẤT CẢ CÁC ROUTES */}
-        
+
         {/* Tính năng Payment mới */}
-        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} /> {}
-        <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} /> {}
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} /> { }
+        <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} /> { }
 
 
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -154,9 +155,12 @@ export default function App() {
         <Route path="/workspaces/:id/boards/new" element={<ProtectedRoute><CreateBoardPage /></ProtectedRoute>} />
         <Route path="/workspaces/:id/boards/:boardId/edit" element={<ProtectedRoute><EditBoardPage /></ProtectedRoute>} />
         <Route path="/workspaces/:id/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
-        
+
         {/* Trash Route mới */}
-        <Route path="/workspaces/:workspaceId/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} /> {}
+        <Route path="/workspaces/:workspaceId/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} /> { }
+
+        {/* Chat Route */}
+        <Route path="/workspaces/:workspaceId/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
         <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
         <Route path="/reports/:workspaceId" element={<ProtectedRoute><ReportDetailPage /></ProtectedRoute>} />
@@ -169,9 +173,9 @@ export default function App() {
         <Route path="*" element={<PublicRoute><HomePage /></PublicRoute>} />
       </Routes>
 
-            {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
+      {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
         <ProtectedRoute>
-            
+
         </ProtectedRoute>
       )}
     </>

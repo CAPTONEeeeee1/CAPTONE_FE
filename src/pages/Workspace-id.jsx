@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, Rocket } from "lucide-react";
+import { Plus, Users, Mail, MoreVertical, Lock, Globe, Settings, Trash2, Layout, AlertCircle, LogOut, Rocket, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { dispatchActivityRefreshEvent } from "@/lib/utils"; // Import the event dispatcher
 
@@ -103,7 +103,7 @@ export default function WorkspacePage() {
         try {
             setIsLoadingMembers(true);
             const response = await workspaceService.getMembers(workspaceId);
-
+            s
             // Convert all roles to lowercase for consistent handling in the frontend
             const lowercaseMembers = (response.members || []).map(m => ({
                 ...m,
@@ -588,23 +588,34 @@ export default function WorkspacePage() {
                                 <h2 className="text-2xl font-bold tracking-tight">Boards</h2>
                                 <p className="text-muted-foreground">Tổ chức công việc theo từng bảng</p>
                             </div>
-                            {/* Only owner and leader can create boards */}
-                            {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
-                                <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
+                                {/* Chat button - visible to all members */}
+                                {currentUserRole && (
                                     <Button variant="outline" asChild>
-                                        <Link to={`/workspaces/${workspaceId}/trash`}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Thùng rác
+                                        <Link to={`/workspaces/${workspaceId}/chat`}>
+                                            <MessageCircle className="mr-2 h-4 w-4" />
+                                            Chat
                                         </Link>
                                     </Button>
-                                    <Button asChild>
-                                        <Link to={`/workspaces/${workspaceId}/boards/new`}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Tạo board mới
-                                        </Link>
-                                    </Button>
-                                </div>
-                            )}
+                                )}
+                                {/* Trash and Create board - only for owner and leader */}
+                                {currentUserRole && ['owner', 'leader'].includes(currentUserRole) && (
+                                    <>
+                                        <Button variant="outline" asChild>
+                                            <Link to={`/workspaces/${workspaceId}/trash`}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Thùng rác
+                                            </Link>
+                                        </Button>
+                                        <Button asChild>
+                                            <Link to={`/workspaces/${workspaceId}/boards/new`}>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Tạo board mới
+                                            </Link>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {isLoadingBoards ? (
