@@ -22,13 +22,18 @@ export default function AdminUsersPage() {
       })
       .catch((err) => {
         console.error("Admin users error:", err);
-        toast.error(err.message || "Không tải được danh sách người dùng.");
+        const msg =
+          err?.response?.data?.error ||
+          err?.message ||
+          "Không tải được danh sách người dùng.";
+        toast.error(msg);
       })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleSearchSubmit = (e) => {
@@ -44,7 +49,11 @@ export default function AdminUsersPage() {
       toast.success("Xóa người dùng thành công!");
     } catch (err) {
       console.error("Delete user error:", err);
-      toast.error(err.message || "Xóa người dùng thất bại.");
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        "Xóa người dùng thất bại.";
+      toast.error(msg);
     } finally {
       setConfirmDeleteId(null);
     }
@@ -52,12 +61,18 @@ export default function AdminUsersPage() {
 
   const handleSaveEdit = async () => {
     try {
+      if (!editingUser) return;
 
-      if (editingUser._dirtyRole)
+      if (editingUser._dirtyRole) {
         await adminService.updateUserRole(editingUser.id, editingUser.role);
+      }
 
-      if (editingUser._dirtyStatus)
-        await adminService.updateUserStatus(editingUser.id, editingUser.status);
+      if (editingUser._dirtyStatus) {
+        await adminService.updateUserStatus(
+          editingUser.id,
+          editingUser.status
+        );
+      }
 
       await adminService.updateUserInfo(editingUser.id, {
         fullName: editingUser.fullName,
@@ -71,7 +86,11 @@ export default function AdminUsersPage() {
       toast.success("Cập nhật người dùng thành công!");
     } catch (err) {
       console.error("Update user error:", err);
-      toast.error(err.message || "Cập nhật người dùng thất bại.");
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        "Cập nhật người dùng thất bại.";
+      toast.error(msg);
     }
   };
 
@@ -79,8 +98,11 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold text-gray-800">Quản lý người dùng</h2>
+      <h2 className="text-2xl font-semibold text-gray-800">
+        Quản lý người dùng
+      </h2>
 
+      {/* --- Form tìm kiếm --- */}
       <form
         onSubmit={handleSearchSubmit}
         className="flex flex-wrap gap-3 items-center"
@@ -94,7 +116,7 @@ export default function AdminUsersPage() {
         <ButtonSmall type="submit">Filter</ButtonSmall>
       </form>
 
-      {/* Bảng */}
+      {/* --- Bảng danh sách người dùng --- */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 border-b border-gray-200">
@@ -102,14 +124,20 @@ export default function AdminUsersPage() {
               <th className="px-4 py-2 text-left">User</th>
               <th className="px-4 py-2 text-left">Role</th>
               <th className="px-4 py-2 text-left">Status</th>
+              <th className="px-4 py-2 text-left">Account</th>
               <th className="px-4 py-2 text-left">Workspaces</th>
               <th className="px-4 py-2 text-left">Created</th>
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-b last:border-none">
+              <tr
+                key={u.id}
+                className="border-b last:border-none hover:bg-gray-50 transition"
+              >
+                {/* --- Cột User --- */}
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-2">
                     {u.avatar && (
@@ -125,17 +153,48 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2">{u.role}</td>
-                <td className="px-4 py-2">{u.status}</td>
+
+                {/* --- Role --- */}
+                <td className="px-4 py-2 capitalize">{u.role}</td>
+
+                {/* --- Status --- */}
+                <td className="px-4 py-2 capitalize">{u.status}</td>
+
+                {/* --- Account (Free / Premium) --- */}
                 <td className="px-4 py-2">
-                  {u._count?.ownedWorkspaces || 0} owned /{" "}
-                  {u._count?.workspaceMemberships || 0} member
+                  <span
+                    className={
+                      (u.accountType || "free").toLowerCase() === "premium"
+                        ? "inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800"
+                        : "inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800"
+                    }
+                  >
+                    {(u.accountType || "free").toLowerCase() === "premium"
+                      ? "premium"
+                      : "free"}
+                  </span>
                 </td>
+
+                {/* --- Workspaces --- */}
+                <td className="px-4 py-2">
+                  {(u.ownedWorkspaces ??
+                    u._count?.ownedWorkspaces ??
+                    0) + ""}{" "}
+                  owned /{" "}
+                  {(u.memberWorkspaces ??
+                    u._count?.workspaceMemberships ??
+                    0) + ""}{" "}
+                  member
+                </td>
+
+                {/* --- Created --- */}
                 <td className="px-4 py-2">
                   {u.createdAt
                     ? new Date(u.createdAt).toLocaleDateString()
                     : "-"}
                 </td>
+
+                {/* --- Actions --- */}
                 <td className="px-4 py-2 text-right space-x-2">
                   <ButtonSmall
                     onClick={() =>
@@ -160,10 +219,7 @@ export default function AdminUsersPage() {
 
             {users.length === 0 && !loading && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-4 text-center text-gray-500"
-                >
+                <td colSpan={7} className="px-4 py-4 text-center text-gray-500">
                   Không có người dùng nào.
                 </td>
               </tr>
@@ -172,6 +228,7 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
+      {/* --- Phân trang --- */}
       {pagination && (
         <div className="flex items-center justify-end gap-3 text-sm">
           <span>
@@ -194,6 +251,7 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* --- Xác nhận xóa --- */}
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full space-y-4 text-center">
@@ -222,6 +280,7 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* --- Modal chỉnh sửa user --- */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-4 w-full max-w-md space-y-3">
@@ -233,7 +292,10 @@ export default function AdminUsersPage() {
                 className="border rounded px-3 py-2 w-full"
                 value={editingUser.fullName}
                 onChange={(e) =>
-                  setEditingUser({ ...editingUser, fullName: e.target.value })
+                  setEditingUser({
+                    ...editingUser,
+                    fullName: e.target.value,
+                  })
                 }
               />
             </div>
@@ -251,7 +313,7 @@ export default function AdminUsersPage() {
                   })
                 }
               >
-                <option value="USER">user</option>
+                <option value="user">user</option>
                 <option value="ADMIN">ADMIN</option>
               </select>
             </div>

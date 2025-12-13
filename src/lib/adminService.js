@@ -1,6 +1,7 @@
 import apiClient from "./api";
 
 const adminService = {
+
   async getStats() {
     return apiClient.get("/admin/stats");
   },
@@ -29,6 +30,12 @@ const adminService = {
 
   async deleteUser(userId) {
     return apiClient.delete(`/admin/users/${userId}`);
+  },
+
+  async getPayments({ page = 1, limit = 20, search } = {}) {
+    const params = new URLSearchParams({ page, limit });
+    if (search) params.append("search", search);
+    return apiClient.get(`/admin/payments?${params.toString()}`);
   },
 };
 
