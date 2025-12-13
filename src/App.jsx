@@ -28,14 +28,25 @@ import EditBoardPage from './pages/EditBoard';
 import BoardPage from './pages/BoardPage';
 import AcceptInvitationPage from './pages/AcceptInvitation';
 import Checkout from './pages/Checkout';
+<<<<<<< HEAD
 import UpgradePage from './pages/Upgrade';
 import PaymentStatusPage from './pages/PaymentStatus';
 import TrashPage from './pages/TrashPage';
+=======
+import TrashPage from './pages/TrashPage';
+import ChatPage from './pages/ChatPage';
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
 
 
 // ===== Components & Utils =====
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
+<<<<<<< HEAD
+=======
+import UpgradePage from './pages/Upgrade';
+
+import PaymentStatusPage from './pages/PaymentStatus';
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
 import workspaceService from './services/workspaceService';
 
 // ===== ADMIN PAGES =====
@@ -44,7 +55,13 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
+<<<<<<< HEAD
 export default function App() {
+=======
+
+export default function App() {
+  // THÊM LOGIC TỪ feature/fe-changes
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
   const location = useLocation();
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
   const [_isWorkspacePremium, setIsWorkspacePremium] = useState(false);
@@ -58,11 +75,15 @@ export default function App() {
       '/workspaces/:id/boards/new',
       '/workspaces/:id/boards/:boardId/edit',
       '/workspaces/:id/boards/:boardId',
+<<<<<<< HEAD
       '/workspaces/:workspaceId/trash',
+=======
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
       '/reports/:workspaceId',
     ];
 
     for (const pattern of workspacePathPatterns) {
+<<<<<<< HEAD
       const match = matchPath({ path: pattern, end: false }, location.pathname);
 
       if (match?.params?.id) {
@@ -70,17 +91,29 @@ export default function App() {
         break;
       }
       if (match?.params?.workspaceId) {
+=======
+      const match = matchPath(pattern, location.pathname);
+      if (match && match.params.id) {
+        extractedWorkspaceId = match.params.id;
+        break;
+      } else if (match && match.params.workspaceId) {
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
         extractedWorkspaceId = match.params.workspaceId;
         break;
       }
     }
 
     setCurrentWorkspaceId(extractedWorkspaceId);
+<<<<<<< HEAD
     console.log("App.jsx: Extracted Workspace ID:", extractedWorkspaceId);
+=======
+    console.log("App.jsx: Extracted Workspace ID from URL:", extractedWorkspaceId, "Path:", location.pathname);
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
   }, [location.pathname]);
 
   // === Kiểm tra gói Premium (giữ lại để dùng logic khác nếu cần) ===
   useEffect(() => {
+<<<<<<< HEAD
     let cancelled = false;
 
     const fetchWorkspaceDetails = async () => {
@@ -107,6 +140,30 @@ export default function App() {
 
     fetchWorkspaceDetails();
     return () => { cancelled = true; };
+=======
+    console.log("App.jsx: currentWorkspaceId changed, value:", currentWorkspaceId);
+    if (currentWorkspaceId) {
+      setLoadingWorkspace(true);
+      const fetchWorkspaceDetails = async () => {
+        console.log("App.jsx: Attempting to fetch workspace details for ID:", currentWorkspaceId);
+        try {
+          const response = await workspaceService.getById(currentWorkspaceId);
+          console.log("App.jsx: Workspace details fetched:", response);
+          setIsWorkspacePremium(response.workspace.plan === 'PREMIUM'); // Assuming 'plan' field and 'PREMIUM' value
+        } catch (error) {
+          console.error("App.jsx: Failed to fetch workspace details:", error);
+          setIsWorkspacePremium(false); // Assume not premium on error
+        } finally {
+          setLoadingWorkspace(false);
+        }
+      };
+      fetchWorkspaceDetails();
+    } else {
+      console.log("App.jsx: currentWorkspaceId is null or undefined, skipping fetch.");
+      setIsWorkspacePremium(false);
+      setLoadingWorkspace(false);
+    }
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
   }, [currentWorkspaceId]);
 
   return (
@@ -130,7 +187,25 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+<<<<<<< HEAD
         <Route path="/payment-status" element={<PublicRoute><PaymentStatusPage /></PublicRoute>} />
+=======
+        <Route
+          path="/payment-status"
+          element={
+            <PublicRoute>
+              <PaymentStatusPage />
+            </PublicRoute>
+          }
+        />
+
+        {/* 3. PROTECTED ROUTES - KẾT HỢP TẤT CẢ CÁC ROUTES */}
+
+        {/* Tính năng Payment mới */}
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} /> { }
+        <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} /> { }
+
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
 
         {/* ================= USER PROTECTED ROUTES ================= */}
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
@@ -142,7 +217,17 @@ export default function App() {
         <Route path="/workspaces/:id/boards/new" element={<ProtectedRoute><CreateBoardPage /></ProtectedRoute>} />
         <Route path="/workspaces/:id/boards/:boardId/edit" element={<ProtectedRoute><EditBoardPage /></ProtectedRoute>} />
         <Route path="/workspaces/:id/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+<<<<<<< HEAD
         <Route path="/workspaces/:workspaceId/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} />
+=======
+
+        {/* Trash Route mới */}
+        <Route path="/workspaces/:workspaceId/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} /> { }
+
+        {/* Chat Route */}
+        <Route path="/workspaces/:workspaceId/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
         <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
         <Route path="/reports/:workspaceId" element={<ProtectedRoute><ReportDetailPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
@@ -154,6 +239,14 @@ export default function App() {
         <Route path="*" element={<PublicRoute><HomePage /></PublicRoute>} />
       </Routes>
 
+<<<<<<< HEAD
+=======
+      {!loadingWorkspace && currentWorkspaceId && isWorkspacePremium && (
+        <ProtectedRoute>
+
+        </ProtectedRoute>
+      )}
+>>>>>>> 0f523bf5fdd139cae0128f631ef3c78771c580cf
     </>
   );
 }
