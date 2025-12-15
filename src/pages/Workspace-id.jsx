@@ -706,8 +706,8 @@ export default function WorkspacePage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {/* Chat button - visible to all members */}
-                {currentUserRole && (
+                {/* Chat button - only visible if workspace is Premium */}
+                {currentUserRole && workspace?.plan === 'PREMIUM' && (
                   <Button variant="outline" asChild>
                     <Link to={`/workspaces/${workspaceId}/chat`}>
                       <MessageCircle className="mr-2 h-4 w-4" />
