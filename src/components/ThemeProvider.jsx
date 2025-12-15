@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import settingService from "@/services/settingService";
+import authService from "@/lib/authService";
 import { toast } from "sonner";
 
 const ThemeProviderContext = createContext(null);
@@ -20,7 +21,7 @@ export function ThemeProvider({ children }) {
         root.classList.remove("light", "dark");
         root.classList.add(initialTheme);
       } catch (error) {
-        toast.error("Không thể tải cài đặt giao diện.");
+        // toast.error("Không thể tải cài đặt giao diện."); // Don't show error for this
         // Fallback to light theme
         const root = window.document.documentElement;
         root.classList.remove("dark");
@@ -29,7 +30,15 @@ export function ThemeProvider({ children }) {
         setIsLoading(false);
       }
     };
-    fetchInitialTheme();
+
+    if (authService.isAuthenticated()) {
+      fetchInitialTheme();
+    } else {
+      setIsLoading(false);
+      const root = window.document.documentElement;
+      root.classList.remove("dark");
+      root.classList.add("light");
+    }
   }, []);
 
   const setTheme = async (newTheme) => {

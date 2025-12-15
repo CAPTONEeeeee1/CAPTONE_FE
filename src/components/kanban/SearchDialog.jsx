@@ -39,7 +39,7 @@ const SearchDialog = ({ children }) => {
             try {
                 const workspacePromise = searchService.searchWorkspaces({ q: debouncedSearchTerm });
                 const boardPromise = searchService.searchBoards({ q: debouncedSearchTerm });
-                const cardPromise = boardId ? searchService.searchCards({ boardId, q: debouncedSearchTerm }) : Promise.resolve([]);
+                const cardPromise = searchService.searchCards({ q: debouncedSearchTerm });
 
                 const [workspaceResults, boardResults, cardResults] = await Promise.all([workspacePromise, boardPromise, cardPromise]);
 
@@ -59,7 +59,7 @@ const SearchDialog = ({ children }) => {
         } else {
             setResults([]);
         }
-    }, [debouncedSearchTerm, boardId]);
+    }, [debouncedSearchTerm]);
 
     useEffect(() => {
         performSearch();
@@ -108,7 +108,7 @@ const SearchDialog = ({ children }) => {
                                                 <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
                                                 <div className="flex-1">
                                                     <p className="font-semibold">{item.name}</p>
-                                                    <p className="text-sm text-muted-foreground">Workspace</p>
+                                                    <p className="text-sm text-muted-foreground">Không gian làm việc</p>
                                                 </div>
                                             </div>
                                         </Link>
@@ -126,7 +126,7 @@ const SearchDialog = ({ children }) => {
                                                 <Clipboard className="h-5 w-5 text-muted-foreground" />
                                                 <div className="flex-1">
                                                     <p className="font-semibold">{item.name}</p>
-                                                    <p className="text-sm text-muted-foreground">Board</p>
+                                                    <p className="text-sm text-muted-foreground">Bảng trong không gian làm việc {item.workspace.name}</p>
                                                 </div>
                                             </div>
                                         </Link>
@@ -136,7 +136,7 @@ const SearchDialog = ({ children }) => {
                                     return (
                                         <Link
                                             key={`card-${item.id}`}
-                                            to={`/workspaces/${workspaceId}/boards/${boardId}?cardId=${item.id}`}
+                                            to={`/workspaces/${item.workspaceId}/boards/${item.boardId}?cardId=${item.id}`}
                                             onClick={() => setIsOpen(false)}
                                             className="block p-3 rounded-lg hover:bg-muted"
                                         >
@@ -145,7 +145,7 @@ const SearchDialog = ({ children }) => {
                                                 <div className="flex-1">
                                                     <p className="font-semibold">{item.title}</p>
                                                     <p className="text-sm text-muted-foreground truncate">
-                                                        Thẻ trong board hiện tại
+                                                        Thẻ trong bảng {item.boardName}
                                                     </p>
                                                 </div>
                                             </div>

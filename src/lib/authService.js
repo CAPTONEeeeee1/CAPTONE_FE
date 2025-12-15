@@ -89,10 +89,27 @@ const authService = {
   },
 
   async verifyOtp(otp, email) {
-    return apiClient.post("/auth/verify-otp", {
+    const response = await apiClient.post("/auth/verify-otp", {
       otp,
       email: normalizeEmail(email),
     });
+
+    const token =
+      response.accessToken ||
+      response.token ||
+      response.data?.accessToken ||
+      response.data?.token;
+
+    const refreshToken =
+      response.refreshToken || response.data?.refreshToken;
+
+    const user = response.user || response.data?.user;
+
+    if (token) localStorage.setItem("token", token);
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+
+    return response;
   },
 
   async sendPasswordResetCode(email) {
