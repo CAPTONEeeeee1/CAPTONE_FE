@@ -37,7 +37,6 @@ export default function CreateWorkspacePage() {
 
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [isPrivate, setIsPrivate] = useState(true);
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
 
     const handleSubmit = async (e) => {
@@ -166,52 +165,6 @@ export default function CreateWorkspacePage() {
                                     </CardContent>
                                 </Card>
 
-                                {/* Privacy Settings */}
-                                <Card>
-                                    <CardHeader>
-                                        <div className="flex items-center gap-2">
-                                            {isPrivate ? (
-                                                <Lock className="h-5 w-5 text-primary" />
-                                            ) : (
-                                                <Globe className="h-5 w-5 text-primary" />
-                                            )}
-                                            <CardTitle>Quyền riêng tư</CardTitle>
-                                        </div>
-                                        <CardDescription>
-                                            Kiểm soát ai có thể xem và truy cập workspace
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="flex items-center justify-between p-4 border-2 rounded-lg bg-muted/20">
-                                            <div className="flex items-center gap-3">
-                                                {isPrivate ? (
-                                                    <div className="p-2 bg-primary/10 rounded-lg">
-                                                        <Lock className="h-5 w-5 text-primary" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-2 bg-primary/10 rounded-lg">
-                                                        <Globe className="h-5 w-5 text-primary" />
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <p className="font-semibold">
-                                                        {isPrivate ? "Private" : "Public"}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {isPrivate
-                                                            ? "Chỉ thành viên được mời mới có thể truy cập"
-                                                            : "Bất kỳ ai cũng có thể xem và tham gia"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Switch
-                                                checked={isPrivate}
-                                                onCheckedChange={setIsPrivate}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
                                 {/* Submit Buttons */}
                                 <div className="flex gap-3 justify-end">
                                     <Button
@@ -263,20 +216,6 @@ export default function CreateWorkspacePage() {
                                                         <h3 className="font-semibold truncate">
                                                             {name || "Tên workspace"}
                                                         </h3>
-                                                        <Badge
-                                                            variant={isPrivate ? "secondary" : "outline"}
-                                                            className="text-xs flex items-center gap-1 flex-shrink-0"
-                                                        >
-                                                            {isPrivate ? (
-                                                                <>
-                                                                    <Lock className="h-3 w-3" /> Private
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Globe className="h-3 w-3" /> Public
-                                                                </>
-                                                            )}
-                                                        </Badge>
                                                     </div>
                                                     <p className="text-xs text-muted-foreground truncate">
                                                         {description || "Mô tả workspace"}

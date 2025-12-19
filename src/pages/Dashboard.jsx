@@ -40,8 +40,8 @@ export default function DashboardPage() {
     // New states for recent activities pagination
     const [recentActivities, setRecentActivities] = useState([]);
     const [activityPage, setActivityPage] = useState(1);
-    const [activityLimit] = useState(10); // Load 10 activities per click, fixed limit
-    const [hasMoreActivities, setHasMoreActivities] = useState(true);
+    const [activityLimit] = useState(5); // Load 5 activities per page
+    const [activityTotalPages, setActivityTotalPages] = useState(1);
     const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0); // New state to trigger activity refresh
 
@@ -49,16 +49,14 @@ export default function DashboardPage() {
     const isAuthenticated = authService.isAuthenticated(); // Read auth status
 
     // Function to fetch activities
-    const fetchActivities = async (page, limit, append = false) => {
+    const fetchActivities = async (page, limit) => {
         try {
-            if (append) setIsLoadingMoreActivities(true);
+            setIsLoadingMoreActivities(true);
             const response = await reportService.getOverview({ page, limit });
             const newActivities = response.recentActivities || [];
 
-            setRecentActivities(prevActivities =>
-                append ? [...prevActivities, ...newActivities] : newActivities
-            );
-            setHasMoreActivities(response.pagination.hasMore);
+            setRecentActivities(newActivities);
+            setActivityTotalPages(response.pagination.totalPages);
             setActivityPage(page);
             return response; // Return response for initial data fetch
         } catch (error) {
@@ -66,7 +64,7 @@ export default function DashboardPage() {
             toast.error("Không thể tải hoạt động gần đây");
             return null;
         } finally {
-            if (append) setIsLoadingMoreActivities(false);
+            setIsLoadingMoreActivities(false);
         }
     };
 
@@ -83,7 +81,7 @@ export default function DashboardPage() {
 
             try {
                 setIsLoading(true);
-                // Fetch initial activities (page 1, limit 10)
+                // Fetch initial activities (page 1, limit 5)
                 const [workspacesResponse, userDashboardReportResponse, initialActivitiesResponse] = await Promise.all([
                     workspaceService.getAll(),
                     reportService.getUserDashboardReport(),
@@ -113,7 +111,6 @@ export default function DashboardPage() {
     const handleRefreshActivities = () => {
         setRecentActivities([]); // Clear current activities
         setActivityPage(1); // Reset page to 1
-        setHasMoreActivities(true); // Assume there are more
         setRefreshKey(prev => prev + 1); // Trigger useEffect
     };
 
@@ -172,10 +169,76 @@ export default function DashboardPage() {
         return actionMap[action] || action.replace(/_/g, ' ');
     };
 
-    const handleLoadMoreActivities = () => {
-        if (!isLoadingMoreActivities && hasMoreActivities) {
-            fetchActivities(activityPage + 1, activityLimit, true);
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= activityTotalPages && !isLoadingMoreActivities) {
+            fetchActivities(newPage, activityLimit);
         }
+    };
+
+    const renderPaginationItems = () => {
+        const items = [];
+        const maxVisiblePages = 5;
+        const halfVisible = Math.floor(maxVisiblePages / 2);
+
+        let startPage = Math.max(1, activityPage - halfVisible);
+        let endPage = Math.min(activityTotalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            items.push(
+                <Button
+                    key="1"
+                    variant="outline"
+                    size="sm"
+                    className="w-9 h-9 p-0"
+                    onClick={() => handlePageChange(1)}
+                    disabled={isLoadingMoreActivities}
+                >
+                    1
+                </Button>
+            );
+            if (startPage > 2) {
+                items.push(<span key="start-ellipsis" className="px-2">...</span>);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            items.push(
+                <Button
+                    key={i}
+                    variant={i === activityPage ? "default" : "outline"}
+                    size="sm"
+                    className="w-9 h-9 p-0"
+                    onClick={() => handlePageChange(i)}
+                    disabled={isLoadingMoreActivities}
+                >
+                    {i}
+                </Button>
+            );
+        }
+
+        if (endPage < activityTotalPages) {
+            if (endPage < activityTotalPages - 1) {
+                items.push(<span key="end-ellipsis" className="px-2">...</span>);
+            }
+            items.push(
+                <Button
+                    key={activityTotalPages}
+                    variant="outline"
+                    size="sm"
+                    className="w-9 h-9 p-0"
+                    onClick={() => handlePageChange(activityTotalPages)}
+                    disabled={isLoadingMoreActivities}
+                >
+                    {activityTotalPages}
+                </Button>
+            );
+        }
+
+        return items;
     };
 
     return (
@@ -428,16 +491,10 @@ export default function DashboardPage() {
                                                             <div className="text-center text-muted-foreground py-8">Không có hoạt động gần đây</div>
                                                         )}
                                                     </div>
-                                                    {/* Load More Button */}
-                                                    {hasMoreActivities && (
-                                                        <div className="text-center mt-6">
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={handleLoadMoreActivities}
-                                                                disabled={isLoadingMoreActivities}
-                                                            >
-                                                                {isLoadingMoreActivities ? "Đang tải..." : "Xem thêm"}
-                                                            </Button>
+                                                    {/* Pagination Controls */}
+                                                    {recentActivities.length > 0 && activityTotalPages > 1 && (
+                                                        <div className="flex items-center justify-center gap-2 mt-4">
+                                                            {renderPaginationItems()}
                                                         </div>
                                                     )}
                                                 </CardContent>
