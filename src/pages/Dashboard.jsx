@@ -1,6 +1,6 @@
 import authService from "@/lib/authService"; // Import authService
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import workspaceService from "@/services/workspaceService";
 import reportService from "@/services/reportService";
@@ -36,6 +36,28 @@ export default function DashboardPage() {
     const [workspaces, setWorkspaces] = useState([]);
     const [dashboardData, setDashboardData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const upgradeSuccess = searchParams.get("upgrade_success");
+        const workspaceId = searchParams.get("workspace_id");
+
+        if (upgradeSuccess === "true" && workspaceId && workspaces.length > 0) {
+            const workspace = workspaces.find(ws => ws.id === workspaceId);
+            if (workspace) {
+                toast.success(`Nâng cấp thành công!`, {
+                    description: `Không gian làm việc "${workspace.name}" của bạn đã được nâng cấp lên gói Premium.`,
+                    duration: 5000,
+                });
+
+                // Clean up URL
+                searchParams.delete("upgrade_success");
+                searchParams.delete("workspace_id");
+                setSearchParams(searchParams, { replace: true });
+            }
+        }
+    }, [workspaces, searchParams, setSearchParams]);
 
     // New states for recent activities pagination
     const [recentActivities, setRecentActivities] = useState([]);

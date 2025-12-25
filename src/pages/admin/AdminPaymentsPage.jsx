@@ -9,14 +9,24 @@ export default function AdminPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   const fetchPayments = () => {
     setLoading(true);
     adminService
-      .getPayments({ page, limit: 20, search: search || undefined })
+      .getPayments({
+        page,
+        limit: 20,
+        search: search || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      })
       .then((data) => {
         setPayments(data.payments || []);
         setPagination(data.pagination || null);
+        setTotalRevenue(data.totalRevenue || 0);
       })
       .catch((err) => {
         console.error("Admin payments error:", err);
@@ -49,12 +59,32 @@ export default function AdminPaymentsPage() {
       >
         <input
           className="border rounded px-3 py-2 text-sm"
-          placeholder="Tìm theo email, orderId hoặc tên workspace..."
+          placeholder="Tìm theo email hoặc tên workspace..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <input
+          type="date"
+          className="border rounded px-3 py-2 text-sm"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+        <input
+          type="date"
+          className="border rounded px-3 py-2 text-sm"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
         <ButtonSmall type="submit">Filter</ButtonSmall>
       </form>
+
+      {/* Total Revenue */}
+      <div className="text-lg font-semibold">
+        Tổng doanh thu:{" "}
+        <span className="text-green-700">
+          {totalRevenue.toLocaleString("vi-VN")} ₫
+        </span>
+      </div>
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">

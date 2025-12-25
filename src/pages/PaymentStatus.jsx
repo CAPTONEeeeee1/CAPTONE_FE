@@ -10,6 +10,7 @@ const PaymentStatus = () => {
     const [message, setMessage] = useState('');
     const [orderId, setOrderId] = useState('');
     const [amount, setAmount] = useState('');
+    const [workspaceId, setWorkspaceId] = useState('');
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -18,6 +19,7 @@ const PaymentStatus = () => {
         setMessage(params.get('message') || '');
         setOrderId(params.get('orderId') || '');
         setAmount(params.get('amount') || '');
+        setWorkspaceId(params.get('workspaceId') || '');
 
         if (isSuccess) {
             console.log("Payment successful, dispatching workspacePlanChanged event.");
@@ -29,16 +31,24 @@ const PaymentStatus = () => {
         // If there's a status message, redirect after a delay
         if (message || orderId) {
             const timer = setTimeout(() => {
-                navigate('/workspaces', { replace: true });
+                if (paymentSuccess && workspaceId) {
+                    navigate(`/workspace/${workspaceId}`, { replace: true });
+                } else {
+                    navigate('/workspaces', { replace: true });
+                }
             }, 5000); // 5-second delay
 
             // Cleanup the timer if the component unmounts before the timer fires
             return () => clearTimeout(timer);
         }
-    }, [message, orderId, navigate]);
+    }, [message, orderId, navigate, paymentSuccess, workspaceId]);
 
     const handleGoToWorkspaces = () => {
-        navigate('/workspaces');
+        if (paymentSuccess && workspaceId) {
+            navigate(`/workspace/${workspaceId}`);
+        } else {
+            navigate('/workspaces');
+        }
     };
 
     return (
@@ -62,7 +72,7 @@ const PaymentStatus = () => {
                     <p className="mb-6 text-gray-600 dark:text-gray-400"><strong>Amount:</strong> {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)}</p>
                 )}
                 <Button onClick={handleGoToWorkspaces} size="lg">
-                    Go to Workspaces
+                    {paymentSuccess && workspaceId ? 'Go to Upgraded Workspace' : 'Go to Workspaces'}
                 </Button>
             </div>
         </div>
@@ -70,3 +80,4 @@ const PaymentStatus = () => {
 };
 
 export default PaymentStatus;
+

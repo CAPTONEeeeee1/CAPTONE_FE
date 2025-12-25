@@ -102,7 +102,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold">Email hỗ trợ</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">support@plannex.com</p>
+                        <p className="mt-1 text-sm text-muted-foreground">authplannex@gmail.com</p>
                         <p className="mt-1 text-xs text-muted-foreground">Phản hồi trong vòng 24 giờ</p>
                       </div>
                     </div>
@@ -113,7 +113,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold">Zalo</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">Tìm kiếm: PlanNex Support</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Tìm kiếm: 0901993313</p>
                         <p className="mt-1 text-xs text-muted-foreground">Hỗ trợ trực tuyến 9:00 - 18:00</p>
                       </div>
                     </div>

@@ -96,10 +96,6 @@ export default function ReportsPage() {
                                 Chọn dự án để xem báo cáo chi tiết về tiến độ và hiệu suất
                             </p>
                         </div>
-                        <Button variant="outline" className="gap-2">
-                            <BarChart3 className="h-4 w-4" />
-                            Tổng quan tất cả dự án
-                        </Button>
                     </div>
 
                     {/* Quick Stats */}

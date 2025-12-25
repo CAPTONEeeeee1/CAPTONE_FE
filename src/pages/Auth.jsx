@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,11 +12,30 @@ import { toast } from "sonner";
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("login");
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+
+    if (error) {
+      toast.error(message || "Đăng nhập thất bại", {
+        description: error === 'account_suspended' 
+          ? "Tài khoản của bạn đã bị khóa. Vui lòng kiểm tra email hoặc liên hệ quản trị viên." 
+          : "Vui lòng thử lại hoặc liên hệ hỗ trợ.",
+        duration: 5000,
+      });
+      // Clean the URL
+      searchParams.delete('error');
+      searchParams.delete('message');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({

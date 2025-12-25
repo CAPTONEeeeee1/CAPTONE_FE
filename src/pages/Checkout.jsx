@@ -44,12 +44,12 @@ export default function Checkout() {
   }, [initialWorkspaceId]);
 
   const PLANS = {
-    free_trial: { id: 'free_trial', label: '1 THÁNG DÙNG THỬ', displayPrice: '19.000 VND', amount: 19000, tag: 'DÙNG THỬ', duration: 1 },
-    semiannual: { id: 'semiannual', label: '6 THÁNG', displayPrice: '649.000 VND', amount: 649000, tag: 'TIẾT KIỆM', duration: 6 },
-    annual: { id: 'annual', label: '12 THÁNG', displayPrice: '1.200.000 VND', amount: 1200000, tag: 'TỐT NHẤT', duration: 12 },
+    monthly: { id: 'monthly', label: '1 THÁNG', displayPrice: '149.000 VND', amount: 149000, tag: 'CƠ BẢN', duration: 1 },
+    semiannual: { id: 'semiannual', label: '6 THÁNG', displayPrice: '649.000 VND', amount: 649000, tag: 'PHỔ THÔNG', duration: 6 },
+    annual: { id: 'annual', label: '12 THÁNG', displayPrice: '1.200.000 VND', amount: 1200000, tag: 'TIẾT KIỆM', duration: 12 },
   };
 
-  const [selectedPlan, setSelectedPlan] = useState(PLANS.free_trial);
+  const [selectedPlan, setSelectedPlan] = useState(PLANS.monthly);
 
   const sortedPlans = Object.values(PLANS);
 
@@ -155,7 +155,7 @@ export default function Checkout() {
                     {p.tag && (
                       <span className={`
                         absolute top-[-10px] right-[-10px] px-2 py-0.5 text-xs font-bold rounded-full
-                        ${p.id === 'free_trial' ? 'bg-yellow-400 text-black' : 
+                        ${p.id === 'monthly' ? 'bg-yellow-400 text-black' : 
                           p.id === 'annual' ? 'bg-green-500 text-white' : 
                           'bg-indigo-500 text-white'}
                       `}>

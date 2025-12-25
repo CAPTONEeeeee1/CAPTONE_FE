@@ -32,9 +32,11 @@ const adminService = {
     return apiClient.delete(`/admin/users/${userId}`);
   },
 
-  async getPayments({ page = 1, limit = 20, search } = {}) {
+  async getPayments({ page = 1, limit = 20, search, startDate, endDate } = {}) {
     const params = new URLSearchParams({ page, limit });
     if (search) params.append("search", search);
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
     return apiClient.get(`/admin/payments?${params.toString()}`);
   },
 };

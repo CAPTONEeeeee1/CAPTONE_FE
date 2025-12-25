@@ -28,7 +28,6 @@ import EditBoardPage from './pages/EditBoard';
 import BoardPage from './pages/BoardPage';
 import AcceptInvitationPage from './pages/AcceptInvitation';
 import Checkout from './pages/Checkout';
-import UpgradePage from './pages/Upgrade';
 import PaymentStatusPage from './pages/PaymentStatus';
 import TrashPage from './pages/TrashPage';
 import ChatPage from './pages/ChatPage';
@@ -139,9 +138,7 @@ export default function App() {
 
         {/* ================= USER PROTECTED ROUTES ================= */}
         {/* Tính năng Payment */}
-        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-        <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
-
+              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/workspaces" element={<ProtectedRoute><WorkspacesPage /></ProtectedRoute>} />
         <Route path="/workspaces/create" element={<ProtectedRoute><CreateWorkspacePage /></ProtectedRoute>} />
