@@ -53,7 +53,8 @@ export default function AuthPage() {
     const newErrors = {};
     const hasUpperCase = /[A-Z]/;
     const hasNumber = /[0-9]/;
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
+    const hasSpecialChar = /[@$!%*?&]/;
+    const hasLowerCase = /[a-z]/;
 
     if (!registerForm.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
     else if (!registerForm.fullName.includes(" ")) newErrors.fullName = "Vui lòng nhập có ít nhất một khoảng trắng";
@@ -66,11 +67,13 @@ export default function AuthPage() {
     else if (!isValidPhone(registerForm.phone)) newErrors.phone = "Số điện thoại phải có 10-11 chữ số";
 
     if (!registerForm.password) newErrors.password = "Vui lòng nhập mật khẩu";
-    else if (registerForm.password.length < 12) newErrors.password = "Mật khẩu phải có ít nhất 12 ký tự";
+    else if (registerForm.password.length < 8) newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    else if (registerForm.password.length > 15) newErrors.password = "Mật khẩu không được vượt quá 15 ký tự";
+    else if (!hasLowerCase.test(registerForm.password)) newErrors.password = "Mật khẩu phải có ít nhất 1 chữ thường";
     else if (!hasUpperCase.test(registerForm.password)) newErrors.password = "Mật khẩu phải có ít nhất 1 chữ hoa";
     else if (!hasNumber.test(registerForm.password)) newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số";
     else if (!hasSpecialChar.test(registerForm.password))
-      newErrors.password = "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
+      newErrors.password = "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (@$!%*?&)";
 
     if (!registerForm.confirmPassword) newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
     else if (registerForm.password !== registerForm.confirmPassword)
@@ -378,10 +381,11 @@ export default function AuthPage() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p className="font-medium">Yêu cầu mật khẩu:</p>
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
-                        <li>Tối thiểu 12 ký tự</li>
+                        <li>Tối thiểu 8 và tối đa 15 ký tự</li>
+                        <li>Có ít nhất 1 chữ thường (a-z)</li>
                         <li>Có ít nhất 1 chữ hoa (A-Z)</li>
                         <li>Có ít nhất 1 chữ số (0-9)</li>
-                        <li>Có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</li>
+                        <li>Có ít nhất 1 ký tự đặc biệt (@$!%*?&)</li>
                       </ul>
                     </div>
                   </div>

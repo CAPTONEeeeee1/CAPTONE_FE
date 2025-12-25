@@ -180,7 +180,6 @@ export default function EditBoardPage() {
 
     // Form state
     const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
     const [columns, setColumns] = useState([]);
     const [newColumnName, setNewColumnName] = useState("");
@@ -227,7 +226,6 @@ export default function EditBoardPage() {
                 const board = response.board || response;
 
                 setName(board.name || "");
-                setDescription(board.description || "");
 
                 // Set columns from board lists
                 if (board.lists && board.lists.length > 0) {
@@ -427,11 +425,6 @@ export default function EditBoardPage() {
             return;
         }
 
-        if (description.trim().length > 500) {
-            toast.error("Mô tả không được vượt quá 500 ký tự");
-            return;
-        }
-
         try {
             setIsLoading(true);
 
@@ -532,23 +525,7 @@ export default function EditBoardPage() {
                                             </p>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="description">Mô tả</Label>
-                                            <Textarea
-                                                id="description"
-                                                placeholder="Mô tả ngắn gọn về board này..."
-                                                rows={4}
-                                                value={description}
-                                                onChange={(e) => setDescription(e.target.value)}
-                                                maxLength={500}
-                                                className="border-2 resize-none"
-                                                disabled
-                                            />
-                                            <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                Chức năng cập nhật mô tả chưa được hỗ trợ bởi API
-                                            </p>
-                                        </div>
+
                                     </CardContent>
                                 </Card>
 
@@ -670,9 +647,7 @@ export default function EditBoardPage() {
                                                     <h3 className="font-semibold truncate">
                                                         {name || "Tên board"}
                                                     </h3>
-                                                    <p className="text-xs text-muted-foreground truncate">
-                                                        {description || "Mô tả board"}
-                                                    </p>
+
                                                 </div>
                                             </div>
                                         </CardHeader>

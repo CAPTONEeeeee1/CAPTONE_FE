@@ -36,9 +36,12 @@ export default function ResetPasswordPage() {
     if (!/^\d{6}$/.test(formData.code)) {
       newErrors.code = 'Mã OTP phải là 6 chữ số.';
     }
-    if (formData.newPassword.length < 12) {
-      newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 12 ký tự.';
+    
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/;
+    if (!passwordRegex.test(formData.newPassword)) {
+      newErrors.newPassword = 'Mật khẩu phải dài 8-15 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&).';
     }
+
     if (formData.newPassword !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp.';
     }
