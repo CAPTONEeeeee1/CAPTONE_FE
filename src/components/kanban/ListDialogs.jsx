@@ -130,7 +130,7 @@ export function DeleteListDialog({
                                             <SelectContent>
                                                 {availableLists.map(list => (
                                                     <SelectItem key={list.id} value={list.id}>
-                                                        {list.name}
+                                                        {list.title}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

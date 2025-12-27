@@ -29,6 +29,11 @@ export default function AcceptInvitationPage() {
             setInvitation(response.invitation || response);
             toast.success("Đã chấp nhận lời mời thành công!");
 
+            // If the role was downgraded, show an info toast
+            if (response.roleDowngraded) {
+                toast.info("Workspace chỉ có 1 leader nên role của bạn đã được chuyển thành member.");
+            }
+
             // Redirect to workspace after 2 seconds
             setTimeout(() => {
                 if (response.invitation?.workspaceId || response.workspaceId) {
@@ -41,14 +46,21 @@ export default function AcceptInvitationPage() {
 
         } catch (error) {
             console.error("Error accepting invitation:", error);
-            setError(error.message || "Không thể chấp nhận lời mời");
+            const errorMessage = error.response?.data?.error || "Không thể chấp nhận lời mời";
+            setError(errorMessage);
 
             if (error.response?.status === 404) {
                 toast.error("Lời mời không tồn tại");
             } else if (error.response?.status === 400) {
-                toast.error(error.response.data.error || "Lời mời không hợp lệ hoặc đã hết hạn");
+                toast.error(errorMessage);
             } else if (error.response?.status === 403) {
-                toast.error("Bạn không có quyền chấp nhận lời mời này");
+                if (errorMessage.includes('limit')) {
+                    const customError = 'Workspace đã đầy. Vui lòng liên hệ chủ sở hữu để nâng cấp.';
+                    toast.error(customError);
+                    setError(customError);
+                } else {
+                    toast.error("Bạn không có quyền chấp nhận lời mời này");
+                }
             } else {
                 toast.error("Không thể chấp nhận lời mời. Vui lòng thử lại.");
             }

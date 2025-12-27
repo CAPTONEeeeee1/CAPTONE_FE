@@ -2,8 +2,12 @@ import apiClient from "./api";
 
 const adminService = {
 
-  async getStats() {
-    return apiClient.get("/admin/stats");
+  async getStats({ page = 1, limit = 10, search, startDate, endDate } = {}) {
+    const params = new URLSearchParams({ page, limit });
+    if (search) params.append("search", search);
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    return apiClient.get(`/admin/stats?${params.toString()}`);
   },
 
   async getUsers({ page = 1, limit = 20, search } = {}) {

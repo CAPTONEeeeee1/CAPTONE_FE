@@ -5,6 +5,7 @@ import cardService from "@/services/cardService";
 import commentService from "@/services/commentService";
 import workspaceService from "@/services/workspaceService";
 import listService from "@/services/listService";
+import boardSocketService from "@/services/boardSocketService";
 import apiClient from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
