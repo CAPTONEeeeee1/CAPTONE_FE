@@ -28,6 +28,16 @@ import {
   X,
   Trash2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function BoardPage() {
   const { id: workspaceId, boardId } = useParams();
@@ -38,6 +48,7 @@ export default function BoardPage() {
   const [workspace, setWorkspace] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cardIdToOpen, setCardIdToOpen] = useState(null);
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
 
   // Filter states
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -139,6 +150,23 @@ export default function BoardPage() {
     setSelectedMember(null);
     setSelectedPriority(null);
     setSelectedLabel(null);
+  };
+
+  const handleDeleteBoard = () => {
+    setIsConfirmDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBoard = async () => {
+    try {
+      await boardService.delete(boardId);
+      toast.success("Board đã được xóa thành công!");
+      navigate(`/workspaces/${workspaceId}`);
+    } catch (error) {
+      console.error("Error deleting board:", error);
+      toast.error("Không thể xóa board. Vui lòng thử lại.");
+    } finally {
+      setIsConfirmDeleteDialogOpen(false);
+    }
   };
 
   const getActiveFilterCount = () => {
@@ -259,9 +287,9 @@ export default function BoardPage() {
                     </Badge>
                   )}
                 </div>
-                {board.workspaceId && (
+                {workspace && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Workspace Name: {board.workspaceId}
+                    Workspace: {workspace.name}
                   </p>
                 )}
               </div>
@@ -341,7 +369,7 @@ export default function BoardPage() {
                       Chỉnh sửa board
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">
+                  <DropdownMenuItem className="text-destructive" onClick={handleDeleteBoard}>
                     Xóa board
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -419,26 +447,43 @@ export default function BoardPage() {
               selectedMember={selectedMember}
               selectedPriority={selectedPriority}
               selectedLabel={selectedLabel}
-            />
-          )}
-        </main>
-      </div>
-
-      {/* Filter Dialog */}
-      <FilterDialog
-        isOpen={isFilterDialogOpen}
-        onClose={handleCloseFilter}
-        filterType={filterType}
-        members={boardMembers}
-        labels={boardLabels}
-        selectedMember={selectedMember}
-        selectedPriority={selectedPriority}
-        selectedLabel={selectedLabel}
-        onSelectMember={setSelectedMember}
-        onSelectPriority={setSelectedPriority}
-        onSelectLabel={setSelectedLabel}
-        isLoadingMembers={isLoadingMembers}
-      />
-    </div>
-  );
+                      />
+                    )}
+                  </main>
+                </div>
+            
+                {/* Filter Dialog */}
+                <FilterDialog
+                  isOpen={isFilterDialogOpen}
+                  onClose={handleCloseFilter}
+                  filterType={filterType}
+                  members={boardMembers}
+                  labels={boardLabels}
+                  selectedMember={selectedMember}
+                  selectedPriority={selectedPriority}
+                  selectedLabel={selectedLabel}
+                  onSelectMember={setSelectedMember}
+                  onSelectPriority={setSelectedPriority}
+                  onSelectLabel={setSelectedLabel}
+                  isLoadingMembers={isLoadingMembers}
+                />
+            
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={isConfirmDeleteDialogOpen} onOpenChange={setIsConfirmDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Xóa board này?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bạn có chắc chắn muốn chuyển board &quot;{board.name}&quot; vào thùng rác? Bạn có thể khôi phục hoặc xóa vĩnh viễn board này trong vòng 15 ngày.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                      <AlertDialogAction onClick={confirmDeleteBoard} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Chuyển vào thùng rác
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>  );
 }

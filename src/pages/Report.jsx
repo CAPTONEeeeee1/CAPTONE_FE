@@ -192,48 +192,6 @@ export default function ReportsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Top Performers */}
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <Award className="h-5 w-5 text-primary" />
-                                    <CardTitle>Thành viên xuất sắc</CardTitle>
-                                </div>
-                                <CardDescription>Top 5 thành viên hoàn thành nhiều công việc nhất</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {isLoading ? ([...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)) :
-                                        overviewData?.topPerformers.map((performer, index) => (
-                                            <div key={performer.user.id} className="flex items-center gap-3 pb-4 border-b last:border-0 last:pb-0">
-                                                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400' :
-                                                    index === 1 ? 'bg-gray-400/20 text-gray-700 dark:text-gray-300' :
-                                                        index === 2 ? 'bg-orange-500/20 text-orange-700 dark:text-orange-400' :
-                                                            'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
-                                                </div>
-                                                <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={performer.user.avatar} />
-                                                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                                        {performer.user.fullName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm truncate">{performer.user.fullName}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="flex items-center gap-1">
-                                                        <CheckCircle2 className="h-3 w-3 text-green-600" />
-                                                        <span className="text-sm font-semibold">{performer.tasksCompleted}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
 
                     {/* Workspaces List */}

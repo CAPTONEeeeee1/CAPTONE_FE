@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import reportService from "@/services/reportService";
 
 const STATUS_COLORS = {
@@ -62,15 +63,14 @@ export default function ReportDetailPage() {
         color: STATUS_COLORS[item.status] || '#cccccc'
     })) || [];
     
-    const barChartData = reportData?.topContributors.map(item => ({
+    const barChartData = reportData?.topPerformers.map(item => ({
         name: item.user.fullName,
-        created: item.cardsCreated,
+        completed: item.tasksCompleted,
     }));
     
-    const memberPerformanceData = reportData?.topContributors.map(item => ({
+    const memberPerformanceData = reportData?.topPerformers.map(item => ({
         name: item.user.fullName,
-        cardsCreated: item.cardsCreated,
-        // The API doesn't provide completed cards per user, so we'll just show created cards
+        tasksCompleted: item.tasksCompleted,
     }));
     
     if (isLoading) {
@@ -154,10 +154,7 @@ export default function ReportDetailPage() {
                                 </SelectContent>
                             </Select>
 
-                            <Button className="gap-2" disabled>
-                                <Download className="h-4 w-4" />
-                                Xuất báo cáo PDF
-                            </Button>
+                            {/* Removed PDF Export Button */}
                         </div>
                     </div>
 
@@ -195,7 +192,7 @@ export default function ReportDetailPage() {
                                 <Clock className="h-4 w-4 text-primary" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">{reportData.summary.totalCards - reportData.summary.completedCards - reportData.summary.overdueCards}</div>
+                                <div className="text-3xl font-bold">{pieChartData.find(item => item.name === 'In Progress')?.value || 0}</div>
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     công việc đang tiến hành
                                 </p>
@@ -272,14 +269,57 @@ export default function ReportDetailPage() {
                                         <YAxis />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar dataKey="created" fill="#1A73E8" name="Thẻ đã tạo" />
+                                        <Bar dataKey="completed" fill="#1A73E8" name="Thẻ đã hoàn thành" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Member Performance Table */}
+                    {/* Top Performers Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Thành viên xuất sắc</CardTitle>
+                            <CardDescription>Top thành viên hoàn thành nhiều công việc nhất trong workspace này</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {reportData?.topPerformers.length === 0 ? (
+                                    <p className="text-muted-foreground text-center">Chưa có thành viên nào hoàn thành công việc.</p>
+                                ) : (
+                                    reportData?.topPerformers.map((performer, index) => (
+                                        <div key={performer.user.id} className="flex items-center gap-3 pb-4 border-b last:border-0 last:pb-0">
+                                            <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400' :
+                                                index === 1 ? 'bg-gray-400/20 text-gray-700 dark:text-gray-300' :
+                                                    index === 2 ? 'bg-orange-500/20 text-orange-700 dark:text-orange-400' :
+                                                        'bg-muted text-muted-foreground'
+                                                }`}>
+                                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                                            </div>
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={performer.user.avatar} />
+                                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                                    {performer.user.fullName.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-sm truncate">{performer.user.fullName}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="flex items-center gap-1">
+                                                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                                    <span className="text-sm font-semibold">{performer.tasksCompleted}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Member Performance Table (Deprecated/Replaced by Top Performers Card) */}
+                    {/* You might want to remove this section entirely if the Top Performers card is sufficient */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Chi tiết hiệu suất thành viên</CardTitle>
@@ -291,14 +331,14 @@ export default function ReportDetailPage() {
                                     <thead>
                                         <tr className="border-b">
                                             <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Thành viên</th>
-                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Thẻ đã tạo</th>
+                                            <th className="pb-3 text-center text-sm font-medium text-muted-foreground">Thẻ đã hoàn thành</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {memberPerformanceData.map((member) => (
                                             <tr key={member.name} className="border-b last:border-0">
                                                 <td className="py-4 text-sm font-medium">{member.name}</td>
-                                                <td className="py-4 text-center text-sm">{member.cardsCreated}</td>
+                                                <td className="py-4 text-center text-sm">{member.tasksCompleted}</td>
                                             </tr>
                                         ))}
                                     </tbody>
